@@ -34,5 +34,6 @@ for i in range(LUT_SIZE):
 print("// Initialize logarithm lookup table")
 print("initial begin")
 for i in range(LUT_SIZE):
-    print(f"    log_lut[{i}] = {LUT_DATA_WIDTH}'h{log_lut[i]:04X};")
+    hex_value = f"{log_lut[i]:04X}"
+    print(f"    log_lut[{i}] = 16'h{hex_value};")
 print("end")

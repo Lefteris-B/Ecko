@@ -67,7 +67,47 @@ end
 
 // Initialize mel-scale filter center frequencies
 initial begin
-    mel_filter_centers = {120, 112, 104, 98, 91, 85, 79, 74, 69, 64, 59, 55, 51, 47, 44, 41, 37, 34, 32, 29, 27, 24, 22, 20, 18, 17, 15, 13, 12, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0};
+    mel_filter_centers[0] = 8'd0;
+    mel_filter_centers[1] = 8'd0;
+    mel_filter_centers[2] = 8'd1;
+    mel_filter_centers[3] = 8'd2;
+    mel_filter_centers[4] = 8'd3;
+    mel_filter_centers[5] = 8'd4;
+    mel_filter_centers[6] = 8'd5;
+    mel_filter_centers[7] = 8'd6;
+    mel_filter_centers[8] = 8'd7;
+    mel_filter_centers[9] = 8'd8;
+    mel_filter_centers[10] = 8'd9;
+    mel_filter_centers[11] = 8'd10;
+    mel_filter_centers[12] = 8'd12;
+    mel_filter_centers[13] = 8'd13;
+    mel_filter_centers[14] = 8'd15;
+    mel_filter_centers[15] = 8'd17;
+    mel_filter_centers[16] = 8'd18;
+    mel_filter_centers[17] = 8'd20;
+    mel_filter_centers[18] = 8'd22;
+    mel_filter_centers[19] = 8'd24;
+    mel_filter_centers[20] = 8'd27;
+    mel_filter_centers[21] = 8'd29;
+    mel_filter_centers[22] = 8'd32;
+    mel_filter_centers[23] = 8'd34;
+    mel_filter_centers[24] = 8'd37;
+    mel_filter_centers[25] = 8'd41;
+    mel_filter_centers[26] = 8'd44;
+    mel_filter_centers[27] = 8'd47;
+    mel_filter_centers[28] = 8'd51;
+    mel_filter_centers[29] = 8'd55;
+    mel_filter_centers[30] = 8'd59;
+    mel_filter_centers[31] = 8'd64;
+    mel_filter_centers[32] = 8'd69;
+    mel_filter_centers[33] = 8'd74;
+    mel_filter_centers[34] = 8'd79;
+    mel_filter_centers[35] = 8'd85;
+    mel_filter_centers[36] = 8'd91;
+    mel_filter_centers[37] = 8'd98;
+    mel_filter_centers[38] = 8'd104;
+    mel_filter_centers[39] = 8'd112;
+    mel_filter_centers[40] = 8'd120;
 end
 
 // Initialize mel-scale filter coefficients

@@ -7,7 +7,10 @@ INPUT_RANGE = (0, 10)  # Range of input values for logarithm computation
 
 # Function to convert floating-point value to fixed-point representation
 def to_fixed_point(value, width):
-    return int(round(value * (2 ** (width - 1))))
+    if value >= 0:
+        return int(round(value * (2 ** (width - 1))))
+    else:
+        return int(round((2 ** width) + (value * (2 ** (width - 1))))) & ((2 ** width) - 1)
 
 # Generate logarithm lookup table
 log_lut = []

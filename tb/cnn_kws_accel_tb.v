@@ -1,111 +1,108 @@
-`timescale 1ns / 1ps
+`timescale 1ns/1ps
 
 module cnn_kws_accel_tb;
 
-    // Parameters
-    localparam NUM_KEYWORDS = 10;
-    localparam MFCC_FEATURES = 40;
-    localparam MFCC_FRAMES = 100;
-    localparam ACTIV_BITS = 8;
+  // Parameters
+  parameter INPUT_WIDTH = 32;
+  parameter OUTPUT_SIZE = 2;
 
-    // Inputs
-    reg clk;
-    reg rst_n;
-    reg [MFCC_FEATURES*ACTIV_BITS-1:0] mfcc_data;
-    reg mfcc_valid;
+  // Inputs
+  reg clk;
+  reg rst_n;
+  reg [INPUT_WIDTH-1:0] mfcc_in;
+  reg mfcc_valid;
 
-    // Outputs
-    wire [NUM_KEYWORDS-1:0] kws_result;
-    wire kws_valid;
+  // Outputs
+  wire [OUTPUT_SIZE-1:0] keyword_class;
+  wire keyword_detected;
 
-    // Expected output
-    reg [NUM_KEYWORDS-1:0] expected_result;
+  // Instantiate the cnn_kws_accel module
+  cnn_kws_accel #(
+    .INPUT_WIDTH(INPUT_WIDTH),
+    .OUTPUT_SIZE(OUTPUT_SIZE)
+  ) dut (
+    .clk(clk),
+    .rst_n(rst_n),
+    .mfcc_in(mfcc_in),
+    .mfcc_valid(mfcc_valid),
+    .keyword_class(keyword_class),
+    .keyword_detected(keyword_detected)
+  );
 
-    // Instantiate the cnn_kws_accel module
-    cnn_kws_accel #(
-        .NUM_KEYWORDS(NUM_KEYWORDS),
-        .MFCC_FEATURES(MFCC_FEATURES),
-        .MFCC_FRAMES(MFCC_FRAMES),
-        .ACTIV_BITS(ACTIV_BITS)
-    ) dut (
-        .clk(clk),
-        .rst_n(rst_n),
-        .mfcc_data(mfcc_data),
-        .mfcc_valid(mfcc_valid),
-        .kws_result(kws_result),
-        .kws_valid(kws_valid)
-    );
+  // Clock generation
+  always #5 clk = ~clk;
 
-    // Clock generation
-    always #5 clk = ~clk;
+  // Stimulus generation
+  initial begin
+    // Initialize inputs
+    clk = 0;
+    rst_n = 0;
+    mfcc_in = 0;
+    mfcc_valid = 0;
 
-    // Stimulus and verification
-    initial begin
-        // Initialize inputs
-        clk = 0;
-        rst_n = 0;
-        mfcc_data = 0;
-        mfcc_valid = 0;
-        expected_result = 0;
+    // Reset assertion
+    #10 rst_n = 1;
+    @(posedge clk);
 
-        // Reset assertion
-        #10 rst_n = 1;
-        #10 assert(kws_valid === 0) else $error("KWS valid should be 0 after reset");
+    // Test case 1: Valid input sequence for keyword 1
+    mfcc_in = 32'h1234_5678;
+    mfcc_valid = 1;
+    @(posedge clk);
+    mfcc_in = 32'h2345_6789;
+    @(posedge clk);
+    mfcc_in = 32'h3456_789A;
+    @(posedge clk);
+    mfcc_in = 32'h4567_89AB;
+    @(posedge clk);
+    mfcc_valid = 0;
+    @(posedge clk);
+    #10;
+    assert(keyword_detected == 1) else $error("Test case 1 failed: keyword_detected should be 1");
+    assert(keyword_class == 2'b01) else $error("Test case 1 failed: keyword_class mismatch");
 
-        // Test case 1: Keyword 1
-        for (int i = 0; i < MFCC_FRAMES; i = i + 1) begin
-            mfcc_data = $random;
-            mfcc_valid = 1;
-            #10;
-        end
-        mfcc_valid = 0;
-        expected_result = 10'b0000000001;
+    // Test case 2: Valid input sequence for keyword 2
+    mfcc_in = 32'hABCD_EF01;
+    mfcc_valid = 1;
+    @(posedge clk);
+    mfcc_in = 32'hBCDE_F012;
+    @(posedge clk);
+    mfcc_in = 32'hCDEF_0123;
+    @(posedge clk);
+    mfcc_in = 32'hDEF0_1234;
+    @(posedge clk);
+    mfcc_valid = 0;
+    @(posedge clk);
+    #10;
+    assert(keyword_detected == 1) else $error("Test case 2 failed: keyword_detected should be 1");
+    assert(keyword_class == 2'b10) else $error("Test case 2 failed: keyword_class mismatch");
 
-        // Wait for KWS valid
-        wait(kws_valid === 1);
+    // Test case 3: Invalid input sequence
+    mfcc_in = 32'h1111_1111;
+    mfcc_valid = 1;
+    @(posedge clk);
+    mfcc_in = 32'h2222_2222;
+    @(posedge clk);
+    mfcc_in = 32'h3333_3333;
+    @(posedge clk);
+    mfcc_in = 32'h4444_4444;
+    @(posedge clk);
+    mfcc_valid = 0;
+    @(posedge clk);
+    #10;
+    assert(keyword_detected == 0) else $error("Test case 3 failed: keyword_detected should be 0");
 
-        // Check the KWS result
-        assert(kws_result === expected_result) else $error("KWS result mismatch for test case 1");
+    // Add more test cases as needed
 
-        // Test case 2: Keyword 5
-        for (int i = 0; i < MFCC_FRAMES; i = i + 1) begin
-            mfcc_data = $random;
-            mfcc_valid = 1;
-            #10;
-        end
-        mfcc_valid = 0;
-        expected_result = 10'b0000010000;
+    #100;
+    $display("Testbench completed");
+    $finish;
+  end
 
-        // Wait for KWS valid
-        wait(kws_valid === 1);
-
-        // Check the KWS result
-        assert(kws_result === expected_result) else $error("KWS result mismatch for test case 2");
-
-        // Test case 3: No keyword
-        for (int i = 0; i < MFCC_FRAMES; i = i + 1) begin
-            mfcc_data = $random;
-            mfcc_valid = 1;
-            #10;
-        end
-        mfcc_valid = 0;
-        expected_result = 10'b0000000000;
-
-        // Wait for KWS valid
-        wait(kws_valid === 1);
-
-        // Check the KWS result
-        assert(kws_result === expected_result) else $error("KWS result mismatch for test case 3");
-
-        // Add more test cases as needed
-
-        #10 $finish;
+  // Assertions
+  always @(posedge clk) begin
+    if (keyword_detected) begin
+      assert(keyword_class >= 0 && keyword_class < OUTPUT_SIZE) else $error("Keyword class out of range");
     end
-
-    // Timeout assertion
-    initial begin
-        #100000 $error("Timeout: Simulation did not finish within 100000 time units");
-        $finish;
-    end
+  end
 
 endmodule

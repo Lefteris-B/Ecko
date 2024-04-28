@@ -3,14 +3,14 @@ module mfcc_accelerator (
     input wire rst_n,
     input wire [15:0] audio_in,
     input wire audio_valid,
-    output wire [31:0] mfcc_out,
-    output wire mfcc_valid,
+    output reg [31:0] mfcc_out,
+    output reg mfcc_valid,
     input wire [7:0] frame_size,
     input wire [7:0] frame_overlap,
     input wire [7:0] num_mfcc_coeffs,
     input wire [7:0] num_freqs,
-    input wire [15:0] target_freqs [0:255],
-    input wire [15:0] goertzel_coefs [0:255]
+    input wire [4095:0] target_freqs,
+    input wire [4095:0] goertzel_coefs
 );
 
 // Signal declarations
@@ -94,7 +94,14 @@ dct_comp dct (
 );
 
 // Output assignment
-assign mfcc_out = dct_out;
-assign mfcc_valid = dct_valid;
+always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+        mfcc_out <= 32'h0;
+        mfcc_valid <= 1'b0;
+    end else begin
+        mfcc_out <= dct_out;
+        mfcc_valid <= dct_valid;
+    end
+end
 
 endmodule

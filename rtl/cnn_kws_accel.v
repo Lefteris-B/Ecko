@@ -10,6 +10,7 @@
 `include "fully_connected.v"
 `include "softmax.v"
 
+
 module cnn_kws_accel #(
     parameter NUM_KEYWORDS = 10,
     parameter MFCC_FEATURES = 40,
@@ -27,8 +28,8 @@ module cnn_kws_accel #(
     input wire [7:0] frame_overlap,
     input wire [7:0] num_mfcc_coeffs,
     input wire [7:0] num_freqs,
-    input wire [15:0] target_freqs [0:255],
-    input wire [15:0] goertzel_coefs [0:255]
+    input wire [4095:0] target_freqs,
+    input wire [4095:0] goertzel_coefs
 );
 
     // MFCC module signals
@@ -36,15 +37,15 @@ module cnn_kws_accel #(
     wire mfcc_valid;
 
     // CNN-KWS layers
-    wire [ACTIV_BITS-1:0] conv1_out [0:31];
+    wire [ACTIV_BITS-1:0] conv1_out;
     wire conv1_valid;
-    wire [ACTIV_BITS-1:0] conv2_out [0:31];
+    wire [ACTIV_BITS-1:0] conv2_out;
     wire conv2_valid;
-    wire [ACTIV_BITS-1:0] maxpool_out [0:15];
+    wire [ACTIV_BITS-1:0] maxpool_out;
     wire maxpool_valid;
-    wire [ACTIV_BITS-1:0] fc1_out [0:63];
+    wire [ACTIV_BITS-1:0] fc1_out;
     wire fc1_valid;
-    wire [ACTIV_BITS-1:0] fc2_out [0:NUM_KEYWORDS-1];
+    wire [ACTIV_BITS-1:0] fc2_out;
     wire fc2_valid;
     wire [NUM_KEYWORDS-1:0] softmax_out;
     wire softmax_valid;
@@ -68,97 +69,91 @@ module cnn_kws_accel #(
 
 // CNN-KWS layers
 // Convolutional layer 1
-wire [ACTIV_BITS-1:0] conv1_out [0:31];
-wire conv1_valid;
 conv2d #(
-    .INPUT_WIDTH(40),
+    .INPUT_WIDTH(MFCC_FEATURES),
     .INPUT_HEIGHT(1),
     .INPUT_CHANNELS(1),
     .KERNEL_WIDTH(3),
-    .NUM_FILTERS(32)
+    .NUM_FILTERS(32),
+    .ACTIV_BITS(ACTIV_BITS)
 ) conv1 (
     .clk(clk),
     .rst_n(rst_n),
     .data_in(mfcc_out),
     .data_valid(mfcc_valid),
-    .data_out(conv1_out[0]),
+    .data_out(conv1_out),
     .data_out_valid(conv1_valid)
 );
 
 // Convolutional layer 2
-wire [ACTIV_BITS-1:0] conv2_out [0:31];
-wire conv2_valid;
 conv2d #(
-    .INPUT_WIDTH(40),
+    .INPUT_WIDTH(MFCC_FEATURES),
     .INPUT_HEIGHT(1),
-    .INPUT_CHANNELS(32),
+    .INPUT_CHANNELS(1),
     .KERNEL_WIDTH(3),
-    .NUM_FILTERS(32)
+    .NUM_FILTERS(32),
+    .ACTIV_BITS(ACTIV_BITS)
 ) conv2 (
     .clk(clk),
     .rst_n(rst_n),
-    .data_in(conv1_out[0]),
+    .data_in(conv1_out),
     .data_valid(conv1_valid),
-    .data_out(conv2_out[0]),
+    .data_out(conv2_out),
     .data_out_valid(conv2_valid)
 );
 
 // Max pooling layer
-wire [ACTIV_BITS-1:0] maxpool_out [0:15];
-wire maxpool_valid;
 maxpool2d #(
-    .INPUT_WIDTH(40),
+    .INPUT_WIDTH(MFCC_FEATURES),
     .INPUT_HEIGHT(1),
     .INPUT_CHANNELS(32),
-    .KERNEL_WIDTH(2)
+    .KERNEL_WIDTH(2),
+    .ACTIV_BITS(ACTIV_BITS)
 ) maxpool (
     .clk(clk),
     .rst_n(rst_n),
-    .data_in(conv2_out[0]),
+    .data_in(conv2_out),
     .data_valid(conv2_valid),
-    .data_out(maxpool_out[0]),
+    .data_out(maxpool_out),
     .data_out_valid(maxpool_valid)
 );
 
 // Fully connected layer 1
-wire [ACTIV_BITS-1:0] fc1_out [0:63];
-wire fc1_valid;
 fully_connected #(
-    .INPUT_SIZE(16*32),
-    .OUTPUT_SIZE(64)
+    .INPUT_SIZE(MFCC_FEATURES/2*32),
+    .OUTPUT_SIZE(64),
+    .ACTIV_BITS(ACTIV_BITS)
 ) fc1 (
     .clk(clk),
     .rst_n(rst_n),
-    .data_in(maxpool_out[0]),
+    .data_in(maxpool_out),
     .data_valid(maxpool_valid),
-    .data_out(fc1_out[0]),
+    .data_out(fc1_out),
     .data_out_valid(fc1_valid)
 );
 
 // Fully connected layer 2 (output layer)
-wire [ACTIV_BITS-1:0] fc2_out [0:NUM_KEYWORDS-1];
-wire fc2_valid;
 fully_connected #(
     .INPUT_SIZE(64),
-    .OUTPUT_SIZE(NUM_KEYWORDS)
+    .OUTPUT_SIZE(NUM_KEYWORDS),
+    .ACTIV_BITS(ACTIV_BITS)
 ) fc2 (
     .clk(clk),
     .rst_n(rst_n),
-    .data_in(fc1_out[0]),
+    .data_in(fc1_out),
     .data_valid(fc1_valid),
-    .data_out(fc2_out[0]),
+    .data_out(fc2_out),
     .data_out_valid(fc2_valid)
 );
 
 // Softmax activation
-wire [NUM_KEYWORDS-1:0] softmax_out;
-wire softmax_valid;
 softmax #(
-    .INPUT_SIZE(NUM_KEYWORDS)
+    .INPUT_SIZE(NUM_KEYWORDS),
+    .ACTIV_BITS(ACTIV_BITS)
 ) softmax (
     .clk(clk),
     .rst_n(rst_n),
-    .data_in(fc2_out[0]),
+    .data_in(fc2_out),
     .data_valid(fc2_valid),
     .data_out(softmax_out),
     .data_out_valid(softmax_valid)

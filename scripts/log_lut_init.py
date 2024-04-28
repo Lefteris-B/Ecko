@@ -34,6 +34,6 @@ for i in range(LUT_SIZE):
 print("// Initialize logarithm lookup table")
 print("initial begin")
 for i in range(LUT_SIZE):
-    hex_value = f"{log_lut[i]:04X}"
+    hex_value = f"{log_lut[i] & 0xFFFF:04X}"  # Truncate to 16 bits and format as 4-digit hexadecimal
     print(f"    log_lut[{i}] = 16'h{hex_value};")
 print("end")

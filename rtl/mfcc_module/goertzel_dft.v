@@ -21,9 +21,9 @@ integer i;
 always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
         for (i = 0; i < 256; i = i + 1) begin
-            q_prev[i] <= 32'h0;
-            q_curr[i] <= 32'h0;
-            sample_delay[i] <= 16'h0;
+            q_prev[i] = 32'h0;
+            q_curr[i] = 32'h0;
+            sample_delay[i] = 16'h0;
         end
         freq_idx <= 'h0;
         dft_out <= 32'h0;
@@ -31,11 +31,11 @@ always @(posedge clk or negedge rst_n) begin
     end else if (framed_valid) begin
         for (i = 0; i < num_freqs; i = i + 1) begin
             // Update delay sample
-            sample_delay[i] <= framed_out;
+            sample_delay[i] = framed_out;
             
             // Compute Goertzel algorithm
-            q_curr[i] <= (goertzel_coefs[i] * q_prev[i] >>> 15) - q_curr[i] + framed_out;
-            q_prev[i] <= q_curr[i];
+            q_curr[i] = (goertzel_coefs[i] * q_prev[i] >>> 15) - q_curr[i] + framed_out;
+            q_prev[i] = q_curr[i];
         end
         
         // Increment frequency index

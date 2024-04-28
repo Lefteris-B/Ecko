@@ -35,11 +35,11 @@ always @(posedge clk or negedge rst_n) begin
     end else begin
         // Perform matrix multiplication
         for (i = 0; i < OUTPUT_SIZE; i = i + 1) begin
-            mult_result[i] <= 0;
+            mult_result[i] = 0;
             for (j = 0; j < INPUT_SIZE; j = j + 1) begin
-                mult_result[i] <= mult_result[i] + weights[i][j] * data_in[j];
+                mult_result[i] = mult_result[i] + weights[i][j] * data_in[j];
             end
-            acc_result[i] <= mult_result[i] + biases[i];
+            acc_result[i] = mult_result[i] + biases[i];
         end
 
         // Apply activation function (ReLU)
@@ -54,3 +54,4 @@ always @(posedge clk or negedge rst_n) begin
 end
 
 endmodule
+

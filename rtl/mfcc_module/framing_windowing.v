@@ -80,7 +80,7 @@ integer i;
 always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
         for (i = 0; i < 256; i = i + 1) begin
-            hamming_window[i] <= hamming_coeff(i, frame_size);
+            hamming_window[i] = hamming_coeff(i, frame_size);
         end
     end
 end

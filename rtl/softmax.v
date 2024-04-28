@@ -55,7 +55,7 @@ always @(posedge clk or negedge rst_n) begin
         end
 
         // Assign output
-        data_out <= softmax_values[OUTPUT_SIZE-1:0];
+        data_out <= {softmax_values[OUTPUT_SIZE-1:1], softmax_values[0]};
         data_out_valid <= data_valid;
     end
 end

@@ -1,10 +1,3 @@
-`include "preemphasis_filter.v"
-`include "framing_windowing.v"
-`include "goertzel_dft.v"
-`include "mel_filterbank.v"
-`include "logarithm_comp.v"
-`include "dct_comp.v"
-
 module mfcc_accelerator (
     input wire clk,
     input wire rst_n,
@@ -14,7 +7,6 @@ module mfcc_accelerator (
     output wire mfcc_valid,
     input wire [7:0] frame_size,
     input wire [7:0] frame_overlap,
-    input wire [7:0] num_mel_filters,
     input wire [7:0] num_mfcc_coeffs,
     input wire [7:0] num_freqs,
     input wire [15:0] target_freqs [0:255],
@@ -76,7 +68,6 @@ mel_filterbank mel_fbank (
     .rst_n(rst_n),
     .dft_out(dft_out),
     .dft_valid(dft_valid),
-    .num_mel_filters(num_mel_filters),
     .mel_fbank_out(mel_fbank_out),
     .mel_fbank_valid(mel_fbank_valid)
 );

@@ -54,16 +54,16 @@ always @(posedge clk or negedge rst_n) begin
         // Perform convolution
         for (i = 0; i < INPUT_HEIGHT; i = i + 1) begin
             for (j = 0; j < INPUT_WIDTH; j = j + 1) begin
-                conv_result[i][j] <= 0;
+                conv_result[i][j] = 0;
                 for (k = 0; k < NUM_FILTERS; k = k + 1) begin
                     for (l = 0; l < INPUT_CHANNELS; l = l + 1) begin
                         for (m = 0; m < KERNEL_HEIGHT; m = m + 1) begin
                             if (i + m - PADDING >= 0 && i + m - PADDING < INPUT_HEIGHT) begin
-                                conv_result[i][j] <= conv_result[i][j] + weights[k][l][m][j] * input_buffer[i + m - PADDING][j];
+                                conv_result[i][j] = conv_result[i][j] + weights[k][l][m][j] * input_buffer[i + m - PADDING][j];
                             end
                         end
                     end
-                    conv_result[i][j] <= conv_result[i][j] + biases[k];
+                    conv_result[i][j] = conv_result[i][j] + biases[k];
                 end
             end
         end

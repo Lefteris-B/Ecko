@@ -1,3 +1,6 @@
+`ifndef PREEMPHASIS_FILTER_V
+`define PREEMPHASIS_FILTER_V
+
 module preemphasis_filter (
     input wire clk,
     input wire rst_n,
@@ -29,3 +32,5 @@ always @(posedge clk or negedge rst_n) begin
 end
 
 endmodule
+
+`endif

@@ -1,3 +1,6 @@
+`ifndef MAXPOOL2D_V
+`define MAXPOOL2D_V
+
 module maxpool2d #(
     parameter INPUT_WIDTH = 16,
     parameter INPUT_HEIGHT = 1,
@@ -62,3 +65,4 @@ always @(posedge clk or negedge rst_n) begin
 end
 
 endmodule
+`endif

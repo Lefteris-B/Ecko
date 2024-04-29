@@ -10,7 +10,6 @@
 `include "fully_connected.v"
 `include "softmax.v"
 
-
 module cnn_kws_accel #(
     parameter NUM_KEYWORDS = 10,
     parameter MFCC_FEATURES = 40,
@@ -74,8 +73,7 @@ conv2d #(
     .INPUT_HEIGHT(1),
     .INPUT_CHANNELS(1),
     .KERNEL_WIDTH(3),
-    .NUM_FILTERS(32),
-    .ACTIV_BITS(ACTIV_BITS)
+    .NUM_FILTERS(32)
 ) conv1 (
     .clk(clk),
     .rst_n(rst_n),
@@ -91,8 +89,7 @@ conv2d #(
     .INPUT_HEIGHT(1),
     .INPUT_CHANNELS(1),
     .KERNEL_WIDTH(3),
-    .NUM_FILTERS(32),
-    .ACTIV_BITS(ACTIV_BITS)
+    .NUM_FILTERS(32)
 ) conv2 (
     .clk(clk),
     .rst_n(rst_n),
@@ -107,8 +104,7 @@ maxpool2d #(
     .INPUT_WIDTH(MFCC_FEATURES),
     .INPUT_HEIGHT(1),
     .INPUT_CHANNELS(32),
-    .KERNEL_WIDTH(2),
-    .ACTIV_BITS(ACTIV_BITS)
+    .KERNEL_WIDTH(2)
 ) maxpool (
     .clk(clk),
     .rst_n(rst_n),
@@ -121,8 +117,7 @@ maxpool2d #(
 // Fully connected layer 1
 fully_connected #(
     .INPUT_SIZE(MFCC_FEATURES/2*32),
-    .OUTPUT_SIZE(64),
-    .ACTIV_BITS(ACTIV_BITS)
+    .OUTPUT_SIZE(64)
 ) fc1 (
     .clk(clk),
     .rst_n(rst_n),
@@ -135,8 +130,7 @@ fully_connected #(
 // Fully connected layer 2 (output layer)
 fully_connected #(
     .INPUT_SIZE(64),
-    .OUTPUT_SIZE(NUM_KEYWORDS),
-    .ACTIV_BITS(ACTIV_BITS)
+    .OUTPUT_SIZE(NUM_KEYWORDS)
 ) fc2 (
     .clk(clk),
     .rst_n(rst_n),
@@ -148,8 +142,7 @@ fully_connected #(
 
 // Softmax activation
 softmax #(
-    .INPUT_SIZE(NUM_KEYWORDS),
-    .ACTIV_BITS(ACTIV_BITS)
+    .INPUT_SIZE(NUM_KEYWORDS)
 ) softmax (
     .clk(clk),
     .rst_n(rst_n),

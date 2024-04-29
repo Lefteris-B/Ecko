@@ -1,3 +1,6 @@
+`ifndef LOGARITHM_COMP_V
+`define LOGARITHM_COMP_V
+
 module logarithm_comp (
     input wire clk,
     input wire rst_n,
@@ -1066,3 +1069,4 @@ end
 
 
 endmodule
+`endif

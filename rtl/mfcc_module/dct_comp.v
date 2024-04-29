@@ -1,3 +1,6 @@
+`ifndef DCT_COMP_V
+`define DCT_COMP_V
+
 module dct_comp (
     input wire clk,
     input wire rst_n,
@@ -1079,3 +1082,4 @@ initial begin
 end
 
 endmodule
+`endif

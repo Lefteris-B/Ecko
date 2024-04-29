@@ -1,3 +1,6 @@
+`ifndef MEL_FILTERBANK_V
+`define MEL_FILTERBANK_V
+
 module mel_filterbank (
     input wire clk,
     input wire rst_n,
@@ -196,3 +199,4 @@ mel_filter_coefs[39] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   end
 
 endmodule
+`endif

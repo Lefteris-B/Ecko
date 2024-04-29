@@ -1,3 +1,6 @@
+`ifndef CONV2D_V
+`define CONV2D_V
+
 module conv2d #(
     parameter INPUT_WIDTH = 32,
     parameter INPUT_HEIGHT = 1,
@@ -86,3 +89,4 @@ always @(posedge clk or negedge rst_n) begin
 end
 
 endmodule
+`endif

@@ -1,3 +1,6 @@
+`ifndef GOERTZEL_DFT_V
+`define GOERTZEL_DFT_V
+
 module goertzel_dft (
     input wire clk,
     input wire rst_n,
@@ -21,20 +24,22 @@ integer j;
 always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
         for (j = 0; j < 256; j = j + 1) begin
-            q_prev[j] <= 32'h0;
-            q_curr[j] <= 32'h0;
-            sample_delay[j] <= 16'h0;
+            q_prev[j] = 32'h0;
+            q_curr[j] = 32'h0;
+            sample_delay[j] = 16'h0;
         end
         freq_idx <= 8'h0;
         dft_out <= 32'h0;
         dft_valid <= 1'b0;
     end else if (framed_valid) begin
-        for (j = 0; j < num_freqs; j = j + 1) begin
-            // Update delay sample
-            sample_delay[j] <= framed_out;
-            // Compute Goertzel algorithm
-            q_curr[j] <= (goertzel_coefs[j*16 +: 16] * q_prev[j] >>> 15) - q_curr[j] + framed_out;
-            q_prev[j] <= q_curr[j];
+        for (j = 0; j < 256; j = j + 1) begin // Change loop condition to a constant
+            if (j < num_freqs) begin // Add an if statement to check against num_freqs
+                // Update delay sample
+                sample_delay[j] = framed_out;
+                // Compute Goertzel algorithm
+                q_curr[j] = (goertzel_coefs[j*16 +: 16] * q_prev[j] >>> 15) - q_curr[j] + framed_out;
+                q_prev[j] = q_curr[j];
+            end
         end
         // Increment frequency index
         freq_idx <= freq_idx + 1;
@@ -51,3 +56,4 @@ always @(posedge clk or negedge rst_n) begin
 end
 
 endmodule
+`endif

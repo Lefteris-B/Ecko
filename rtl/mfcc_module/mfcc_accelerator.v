@@ -1,3 +1,6 @@
+`ifndef MFC_ACCELERATOR_V
+`define MFC_ACCELERATOR_V
+
 module mfcc_accelerator (
     input wire clk,
     input wire rst_n,
@@ -105,3 +108,4 @@ always @(posedge clk or negedge rst_n) begin
 end
 
 endmodule
+`endif

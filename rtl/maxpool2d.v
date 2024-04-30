@@ -13,7 +13,7 @@ module maxpool2d #(
     input wire rst_n,
     input wire [INPUT_WIDTH*INPUT_HEIGHT*INPUT_CHANNELS-1:0] data_in,
     input wire data_valid,
-    output reg [(INPUT_WIDTH/STRIDE)*(INPUT_HEIGHT/STRIDE)*INPUT_CHANNELS-1:0] data_out,
+    output reg [INPUT_WIDTH/STRIDE*INPUT_HEIGHT/STRIDE*INPUT_CHANNELS-1:0] data_out,
     output reg data_out_valid
 );
 
@@ -48,11 +48,11 @@ always @(posedge clk or negedge rst_n) begin
         for (i = 0; i < INPUT_HEIGHT; i = i + STRIDE) begin
             for (j = 0; j < INPUT_WIDTH; j = j + STRIDE) begin
                 for (k = 0; k < INPUT_CHANNELS; k = k + 1) begin
-                    max_value <= input_buffer[i][j];
+                    max_value = input_buffer[i][j];
                     for (m = 0; m < KERNEL_HEIGHT; m = m + 1) begin
                         for (n = 0; n < KERNEL_WIDTH; n = n + 1) begin
                             if (i + m < INPUT_HEIGHT && j + n < INPUT_WIDTH) begin
-                                max_value <= (input_buffer[i + m][j + n] > max_value) ? input_buffer[i + m][j + n] : max_value;
+                                max_value = (input_buffer[i + m][j + n] > max_value) ? input_buffer[i + m][j + n] : max_value;
                             end
                         end
                     end

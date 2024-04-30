@@ -21,9 +21,8 @@ reg [7:0] frame_counter;
 reg frame_buffer_full;
 
 // Constants for Hamming window calculation
-localparam integer Q15_ONE = 16'h7FFF;
-localparam integer Q15_HALF = 16'h4000;
-localparam integer TWOPI_Q15 = 16'h6487;
+localparam integer Q15_ONE = 32'h7FFF0000;
+localparam integer Q15_HALF = 32'h40000000;
 
 // Cosine lookup table (pre-computed values for 256 points)
 reg [15:0] cos_table [0:255];
@@ -285,26 +284,29 @@ initial begin
     cos_table[252] = 16'h7F61;
     cos_table[253] = 16'h7FA6;
     cos_table[254] = 16'h7FD8;
-    cos_table[255] = 16'h7FF5;
+    cos_table[255] = 16'h7FF5; //(cosine table initialization code)
 end
-
 // Calculate Hamming window coefficients using a combinational always block
 integer i;
 always @(*) begin
     for (i = 0; i < 256; i = i + 1) begin
-        reg [31:0] temp;
-        reg [15:0] cosine;
-        integer idx;
+        if (i < frame_size) begin
+            reg [31:0] temp;
+            reg [15:0] cosine;
+            integer idx;
 
-        // Calculate the cosine index based on i and frame_size
-        idx = (i * 256) / (frame_size - 1);
+            // Calculate the cosine index based on i and frame_size
+            idx = (i * 256) / (frame_size - 1);
 
-        // Look up the cosine value from the pre-computed table
-        cosine = cos_table[idx];
+            // Look up the cosine value from the pre-computed table
+            cosine = cos_table[idx];
 
-        // Calculate the Hamming window coefficient
-        temp = (Q15_ONE - ((Q15_HALF * cosine) >>> 15)) >>> 1;
-        hamming_window[i] = temp[15:0];
+            // Calculate the Hamming window coefficient
+            temp = (Q15_ONE - ((Q15_HALF * cosine) >>> 15)) >>> 1;
+            hamming_window[i] = temp[15:0];
+        end else begin
+            hamming_window[i] = 0;
+        end
     end
 end
 

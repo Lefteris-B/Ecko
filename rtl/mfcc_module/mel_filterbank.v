@@ -44,7 +44,7 @@ always @(posedge clk or negedge rst_n) begin
         dft_idx <= dft_idx + 1;
 
         // Check if all DFT bins have been processed
-        if (dft_idx == DFT_SIZE - 1) begin
+        if (dft_idx == DFT_SIZE[$clog2(DFT_SIZE)-1:0] - 1) begin
             // Output the accumulated mel-frequency filterbank output
             mel_fbank_out <= filtered_dft[filter_idx];
             mel_fbank_valid <= 1'b1;

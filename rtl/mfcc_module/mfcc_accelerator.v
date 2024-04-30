@@ -11,7 +11,6 @@ module mfcc_accelerator (
     input wire [7:0] frame_size,
     input wire [7:0] frame_overlap,
     input wire [7:0] num_mfcc_coeffs,
-    input wire [7:0] num_freqs,
     input wire [4095:0] target_freqs,
     input wire [4095:0] goertzel_coefs
 );
@@ -23,7 +22,7 @@ wire [15:0] framed_out;
 wire framed_valid;
 wire [31:0] dft_out;
 wire dft_valid;
-wire [31:0] mel_fbank_out;
+wire [25:0] mel_fbank_out;
 wire mel_fbank_valid;
 wire [31:0] log_out;
 wire log_valid;
@@ -58,8 +57,6 @@ goertzel_dft dft (
     .rst_n(rst_n),
     .framed_out(framed_out),
     .framed_valid(framed_valid),
-    .num_freqs(num_freqs),
-    .target_freqs(target_freqs),
     .goertzel_coefs(goertzel_coefs),
     .dft_out(dft_out),
     .dft_valid(dft_valid)

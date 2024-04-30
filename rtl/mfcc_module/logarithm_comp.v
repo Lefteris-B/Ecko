@@ -4,7 +4,7 @@
 module logarithm_comp (
     input wire clk,
     input wire rst_n,
-    input wire [31:0] mel_fbank_out,
+    input wire [25:0] mel_fbank_out,
     input wire mel_fbank_valid,
     output reg [31:0] log_out,
     output reg log_valid
@@ -1066,7 +1066,6 @@ initial begin
     log_lut[1022] = 16'h269B;
     log_lut[1023] = 16'h26BB;
 end
-
 
 endmodule
 `endif

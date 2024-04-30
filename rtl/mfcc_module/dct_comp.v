@@ -34,7 +34,7 @@ always @(posedge clk or negedge rst_n) begin
         dct_sum <= dct_sum + (log_out * dct_coeffs[coeff_idx][log_idx]);
         log_idx <= log_idx + 1;
 
-        if (log_idx == num_mfcc_coeffs - 1) begin
+        if (coeff_idx == num_mfcc_coeffs[$clog2(MAX_COEFFS)-1:0] - 1) begin
             dct_out <= dct_sum;
             dct_valid <= 1'b1;
             dct_sum <= 32'h0;
@@ -52,7 +52,7 @@ always @(posedge clk or negedge rst_n) begin
     end
 end
 
-// Initialize DCT coefficients 
+// Initialize DCT coefficients
 initial begin
       dct_coeffs[0][0] = 32'h0B504F33;
       dct_coeffs[0][1] = 32'h0B504F33;

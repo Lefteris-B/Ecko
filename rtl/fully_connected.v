@@ -23,7 +23,6 @@ reg [ACTIV_BITS-1:0] weights [0:OUTPUT_SIZE*INPUT_SIZE-1];
 reg [ACTIV_BITS-1:0] biases [0:OUTPUT_SIZE-1];
 
 // Declare internal signals
-reg [2*ACTIV_BITS-1:0] mult_result [0:OUTPUT_SIZE-1];
 reg [2*ACTIV_BITS-1:0] acc_result [0:OUTPUT_SIZE-1];
 reg [ACTIV_BITS-1:0] relu_result [0:OUTPUT_SIZE-1];
 
@@ -59,7 +58,6 @@ always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
         // Reset internal signals and output
         for (i = 0; i < OUTPUT_SIZE; i = i + 1) begin
-            mult_result[i] = 0;
             acc_result[i] = 0;
             relu_result[i] = 0;
         end
@@ -68,18 +66,12 @@ always @(posedge clk or negedge rst_n) begin
     end else begin
         // Perform matrix multiplication
         for (i = 0; i < OUTPUT_SIZE; i = i + 1) begin
-            reg [2*ACTIV_BITS-1:0] mult_temp;
             reg [2*ACTIV_BITS-1:0] acc_temp;
-            
-            mult_temp = 0;
+            acc_temp = 0;
             for (j = 0; j < INPUT_SIZE; j = j + 1) begin
-                mult_temp = mult_temp + weights[i*INPUT_SIZE+j] * data_in[j*ACTIV_BITS +: ACTIV_BITS];
+                acc_temp = acc_temp + weights[i*INPUT_SIZE+j] * data_in[j*ACTIV_BITS +: ACTIV_BITS];
             end
-            acc_temp = mult_temp + {{ACTIV_BITS{1'b0}}, biases[i]};
-            
-            // Assign the updated values to the arrays
-            mult_result[i] = mult_temp;
-            acc_result[i] = acc_temp;
+            acc_result[i] = acc_temp + {{ACTIV_BITS{1'b0}}, biases[i]};
         end
 
         // Apply activation function (ReLU)
@@ -94,6 +86,5 @@ always @(posedge clk or negedge rst_n) begin
         data_out_valid = data_valid;
     end
 end
-
 endmodule
 `endif

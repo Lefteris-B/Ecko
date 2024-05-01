@@ -27,21 +27,12 @@ module cnn_kws_accel #(
     input wire rst_n,
     input wire [15:0] audio_in,
     input wire audio_valid,
-    output wire [NUM_KEYWORDS-1:0] kws_result,
-    output wire kws_valid,
+    output reg [NUM_KEYWORDS-1:0] kws_result,
+    output reg kws_valid,
     input wire [7:0] frame_size,
     input wire [7:0] frame_overlap,
     input wire [7:0] num_mfcc_coeffs,
-    input wire [4095:0] target_freqs,
     input wire [4095:0] goertzel_coefs,
-    input wire [FC1_OUTPUT_SIZE*FC1_INPUT_SIZE*ACTIV_BITS-1:0] fc1_weights,
-    input wire [FC1_OUTPUT_SIZE*ACTIV_BITS-1:0] fc1_biases,
-    input wire fc1_load_weights,
-    input wire fc1_load_biases,
-    input wire [FC2_OUTPUT_SIZE*FC2_INPUT_SIZE*ACTIV_BITS-1:0] fc2_weights,
-    input wire [FC2_OUTPUT_SIZE*ACTIV_BITS-1:0] fc2_biases,
-    input wire fc2_load_weights,
-    input wire fc2_load_biases,
     input wire [CONV1_NUM_FILTERS*CONV1_KERNEL_SIZE*CONV1_KERNEL_SIZE*ACTIV_BITS-1:0] conv1_weights,
     input wire [CONV1_NUM_FILTERS*ACTIV_BITS-1:0] conv1_biases,
     input wire conv1_load_weights,
@@ -49,7 +40,15 @@ module cnn_kws_accel #(
     input wire [CONV2_NUM_FILTERS*CONV2_KERNEL_SIZE*CONV2_KERNEL_SIZE*ACTIV_BITS-1:0] conv2_weights,
     input wire [CONV2_NUM_FILTERS*ACTIV_BITS-1:0] conv2_biases,
     input wire conv2_load_weights,
-    input wire conv2_load_biases
+    input wire conv2_load_biases,
+    input wire [FC1_OUTPUT_SIZE*FC1_INPUT_SIZE*ACTIV_BITS-1:0] fc1_weights,
+    input wire [FC1_OUTPUT_SIZE*ACTIV_BITS-1:0] fc1_biases,
+    input wire fc1_load_weights,
+    input wire fc1_load_biases,
+    input wire [FC2_OUTPUT_SIZE*FC2_INPUT_SIZE*ACTIV_BITS-1:0] fc2_weights,
+    input wire [FC2_OUTPUT_SIZE*ACTIV_BITS-1:0] fc2_biases,
+    input wire fc2_load_weights,
+    input wire fc2_load_biases
 );
 
 // MFCC module signals
@@ -57,29 +56,18 @@ wire [MFCC_FEATURES*ACTIV_BITS-1:0] mfcc_out;
 wire mfcc_valid;
 
 // CNN-KWS layers
-wire [ACTIV_BITS-1:0] conv1_out;
+wire [MFCC_FEATURES*ACTIV_BITS-1:0] conv1_out;
 wire conv1_valid;
-wire [ACTIV_BITS-1:0] conv2_out;
+wire [MFCC_FEATURES*ACTIV_BITS-1:0] conv2_out;
 wire conv2_valid;
-wire [ACTIV_BITS-1:0] maxpool_out;
+wire [MFCC_FEATURES/2*ACTIV_BITS-1:0] maxpool_out;
 wire maxpool_valid;
-wire [ACTIV_BITS-1:0] fc1_out;
+wire [FC1_OUTPUT_SIZE*ACTIV_BITS-1:0] fc1_out;
 wire fc1_valid;
-wire [ACTIV_BITS-1:0] fc2_out;
+wire [FC2_OUTPUT_SIZE*ACTIV_BITS-1:0] fc2_out;
 wire fc2_valid;
 wire [NUM_KEYWORDS-1:0] softmax_out;
 wire softmax_valid;
-
-// Fully connected layer signals
-wire [FC1_INPUT_SIZE*ACTIV_BITS-1:0] fc1_data_in;
-wire fc1_data_valid;
-wire [FC1_OUTPUT_SIZE*ACTIV_BITS-1:0] fc1_data_out;
-wire fc1_data_out_valid;
-
-wire [FC2_INPUT_SIZE*ACTIV_BITS-1:0] fc2_data_in;
-wire fc2_data_valid;
-wire [FC2_OUTPUT_SIZE*ACTIV_BITS-1:0] fc2_data_out;
-wire fc2_data_out_valid;
 
 // MFCC module instantiation
 mfcc_accelerator mfcc (
@@ -87,12 +75,11 @@ mfcc_accelerator mfcc (
     .rst_n(rst_n),
     .audio_in(audio_in),
     .audio_valid(audio_valid),
-    .mfcc_out(mfcc_out[MFCC_FEATURES*ACTIV_BITS-1:0]),
+    .mfcc_out(mfcc_out),
     .mfcc_valid(mfcc_valid),
     .frame_size(frame_size),
     .frame_overlap(frame_overlap),
-    .num_mfcc_coeffs(num_mfcc_coeffs),
-    .target_freqs(target_freqs),
+    .num_mfcc_coeffs(num_mfcc_coeffs[4:0]),
     .goertzel_coefs(goertzel_coefs)
 );
 
@@ -111,9 +98,9 @@ conv2d #(
     .rst_n(rst_n),
     .data_in(mfcc_out),
     .data_valid(mfcc_valid),
-    .data_out(conv1_out[ACTIV_BITS-1:0]),
+    .data_out(conv1_out),
     .data_out_valid(conv1_valid),
-    .weights_in(conv1_weights),
+    .weights_in(conv1_weights[CONV1_NUM_FILTERS*CONV1_KERNEL_SIZE*CONV1_KERNEL_SIZE*ACTIV_BITS-1:0]),
     .biases_in(conv1_biases),
     .load_weights(conv1_load_weights),
     .load_biases(conv1_load_biases)
@@ -131,11 +118,11 @@ conv2d #(
 ) conv2 (
     .clk(clk),
     .rst_n(rst_n),
-    .data_in(conv1_out[ACTIV_BITS-1:0]),
+    .data_in(conv1_out),
     .data_valid(conv1_valid),
-    .data_out(conv2_out[ACTIV_BITS-1:0]),
+    .data_out(conv2_out),
     .data_out_valid(conv2_valid),
-    .weights_in(conv2_weights),
+    .weights_in(conv2_weights[CONV2_NUM_FILTERS*CONV2_KERNEL_SIZE*CONV2_KERNEL_SIZE*ACTIV_BITS-1:0]),
     .biases_in(conv2_biases),
     .load_weights(conv2_load_weights),
     .load_biases(conv2_load_biases)
@@ -151,16 +138,13 @@ maxpool2d #(
 ) maxpool (
     .clk(clk),
     .rst_n(rst_n),
-    .data_in(conv2_out[ACTIV_BITS-1:0]),
+    .data_in(conv2_out),
     .data_valid(conv2_valid),
-    .data_out(maxpool_out[ACTIV_BITS-1:0]),
+    .data_out(maxpool_out),
     .data_out_valid(maxpool_valid)
 );
 
 // Fully connected layer 1
-assign fc1_data_in = maxpool_out[ACTIV_BITS-1:0];
-assign fc1_data_valid = maxpool_valid;
-
 fully_connected #(
     .INPUT_SIZE(FC1_INPUT_SIZE),
     .OUTPUT_SIZE(FC1_OUTPUT_SIZE),
@@ -168,10 +152,10 @@ fully_connected #(
 ) fc1 (
     .clk(clk),
     .rst_n(rst_n),
-    .data_in(fc1_data_in),
-    .data_valid(fc1_data_valid),
-    .data_out(fc1_data_out),
-    .data_out_valid(fc1_data_out_valid),
+    .data_in(maxpool_out),
+    .data_valid(maxpool_valid),
+    .data_out(fc1_out),
+    .data_out_valid(fc1_valid),
     .weights_in(fc1_weights),
     .biases_in(fc1_biases),
     .load_weights(fc1_load_weights),
@@ -179,9 +163,6 @@ fully_connected #(
 );
 
 // Fully connected layer 2 (output layer)
-assign fc2_data_in = fc1_data_out;
-assign fc2_data_valid = fc1_data_out_valid;
-
 fully_connected #(
     .INPUT_SIZE(FC2_INPUT_SIZE),
     .OUTPUT_SIZE(FC2_OUTPUT_SIZE),
@@ -189,30 +170,38 @@ fully_connected #(
 ) fc2 (
     .clk(clk),
     .rst_n(rst_n),
-    .data_in(fc2_data_in),
-    .data_valid(fc2_data_valid),
-    .data_out(fc2_data_out),
-    .data_out_valid(fc2_data_out_valid),
+    .data_in(fc1_out),
+    .data_valid(fc1_valid),
+    .data_out(fc2_out),
+    .data_out_valid(fc2_valid),
     .weights_in(fc2_weights),
     .biases_in(fc2_biases),
     .load_weights(fc2_load_weights),
     .load_biases(fc2_load_biases)
 );
 
-// Softmax activation
+wire [NUM_KEYWORDS-1:0] softmax_out;
+wire softmax_valid;
+
 softmax #(
     .INPUT_SIZE(FC2_OUTPUT_SIZE)
 ) softmax (
     .clk(clk),
     .rst_n(rst_n),
-    .data_in(fc2_data_out),
-    .data_valid(fc2_data_out_valid),
-    .data_out(softmax_out[NUM_KEYWORDS-1:0]),
+    .data_in(fc2_out),
+    .data_valid(fc2_valid),
+    .data_out(softmax_out),
     .data_out_valid(softmax_valid)
 );
 
-// Output assignment
-assign kws_result = softmax_out;
-assign kws_valid = softmax_valid;
+always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+        kws_result <= 'b0;
+        kws_valid <= 1'b0;
+    end else begin
+        kws_result <= softmax_out;
+        kws_valid <= softmax_valid;
+    end
+end
 
 endmodule

@@ -6,7 +6,7 @@ module dct_comp (
     input wire rst_n,
     input wire [31:0] log_out,
     input wire log_valid,
-    input wire [7:0] num_mfcc_coeffs,
+    input wire [4:0] num_mfcc_coeffs,
     output reg [31:0] dct_out,
     output reg dct_valid
 );
@@ -19,7 +19,7 @@ reg [31:0] dct_coeffs [0:MAX_COEFFS-1][0:MAX_COEFFS-1];
 
 // Intermediate variables
 reg [31:0] dct_sum;
-reg [$clog2(MAX_COEFFS)-1:0] coeff_idx;
+reg [4:0] coeff_idx;
 reg [$clog2(MAX_COEFFS)-1:0] log_idx;
 
 // DCT computation pipeline
@@ -28,22 +28,22 @@ always @(posedge clk or negedge rst_n) begin
         dct_out <= 32'h0;
         dct_valid <= 1'b0;
         dct_sum <= 32'h0;
-        coeff_idx <= 'h0;
+        coeff_idx <= 5'h0;
         log_idx <= 'h0;
     end else if (log_valid) begin
         dct_sum <= dct_sum + (log_out * dct_coeffs[coeff_idx][log_idx]);
         log_idx <= log_idx + 1;
 
-        if (coeff_idx == num_mfcc_coeffs[$clog2(MAX_COEFFS)-1:0] - 1) begin
+        if (coeff_idx == num_mfcc_coeffs - 1) begin
             dct_out <= dct_sum;
             dct_valid <= 1'b1;
             dct_sum <= 32'h0;
+            coeff_idx <= 5'h0;
+            log_idx <= 'h0;
+        end else if (log_idx == MAX_COEFFS[$clog2(MAX_COEFFS)-1:0] - 1) begin
             coeff_idx <= coeff_idx + 1;
             log_idx <= 'h0;
-
-            if (coeff_idx == num_mfcc_coeffs - 1) begin
-                coeff_idx <= 'h0;
-            end
+            dct_valid <= 1'b0;
         end else begin
             dct_valid <= 1'b0;
         end

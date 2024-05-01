@@ -29,7 +29,7 @@ always @(posedge clk or negedge rst_n) begin
         log_out <= 32'h0;
         log_valid <= 1'b0;
     end else if (mel_fbank_valid) begin
-        lut_addr <= mel_fbank_out[LUT_ADDR_WIDTH+15:16];  // Use upper bits as LUT address
+        lut_addr <= mel_fbank_out[LUT_ADDR_WIDTH+9:10];  // Use upper bits as LUT address
         lut_data <= log_lut[lut_addr];
         log_out <= {16'h0, lut_data};  // Concatenate with zeros to form 32-bit output
         log_valid <= 1'b1;
@@ -38,7 +38,7 @@ always @(posedge clk or negedge rst_n) begin
     end
 end
 
-// Initialize logarithm lookup table (example values)
+
 // Initialize logarithm lookup table
 initial begin
     log_lut[0] = 16'h0000;
@@ -1066,6 +1066,7 @@ initial begin
     log_lut[1022] = 16'h269B;
     log_lut[1023] = 16'h26BB;
 end
+
 
 endmodule
 `endif

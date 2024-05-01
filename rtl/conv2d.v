@@ -29,7 +29,7 @@ reg [ACTIV_BITS-1:0] biases [0:NUM_FILTERS-1];
 
 // Declare internal signals
 reg [ACTIV_BITS-1:0] input_buffer [0:INPUT_HEIGHT-1][0:INPUT_WIDTH-1];
-reg [ACTIV_BITS-1:0] conv_result [0:INPUT_HEIGHT-1][0:INPUT_WIDTH-1];
+reg [2*ACTIV_BITS-1:0] conv_result [0:INPUT_HEIGHT-1][0:INPUT_WIDTH-1];
 reg [ACTIV_BITS-1:0] relu_result [0:INPUT_HEIGHT-1][0:INPUT_WIDTH-1];
 
 // Load weights and biases
@@ -94,27 +94,27 @@ always @(posedge clk or negedge rst_n) begin
             end
         end
 
-        // Perform convolution
-        for (i = 0; i < INPUT_HEIGHT; i = i + 1) begin
-            for (j = 0; j < INPUT_WIDTH; j = j + 1) begin
-                conv_result[i][j] = 0;
-                for (k = 0; k < NUM_FILTERS; k = k + 1) begin
-                    for (l = 0; l < INPUT_CHANNELS; l = l + 1) begin
-                        for (m = 0; m < KERNEL_WIDTH; m = m + 1) begin
-                            if (j + m - PADDING >= 0 && j + m - PADDING < INPUT_WIDTH) begin
-                                conv_result[i][j] = conv_result[i][j] + weights[k][l][i][m] * input_buffer[i][j + m - PADDING];
-                            end
-                        end
-                    end
-                    conv_result[i][j] = conv_result[i][j] + {{ACTIV_BITS{1'b0}}, biases[k]};
-                end
-            end
-        end
+	// Perform convolution
+	for (i = 0; i < INPUT_HEIGHT; i = i + 1) begin
+	    for (j = 0; j < INPUT_WIDTH; j = j + 1) begin
+		conv_result[i][j] = 0;
+		for (k = 0; k < NUM_FILTERS; k = k + 1) begin
+		    for (l = 0; l < INPUT_CHANNELS; l = l + 1) begin
+		        for (m = 0; m < KERNEL_WIDTH; m = m + 1) begin
+		            if (j + m - PADDING >= 0 && j + m - PADDING < INPUT_WIDTH) begin
+		                conv_result[i][j] = conv_result[i][j] + weights[k][l][i][m] * input_buffer[i][j + m - PADDING];
+		            end
+		        end
+		    end
+		    conv_result[i][j] = conv_result[i][j] + {{ACTIV_BITS{1'b0}}, biases[k]};
+		end
+	    end
+	end
 
         // Apply ReLU activation
         for (i = 0; i < INPUT_HEIGHT; i = i + 1) begin
             for (j = 0; j < INPUT_WIDTH; j = j + 1) begin
-                relu_result[i][j] <= (conv_result[i][j][ACTIV_BITS-1] == 0) ? conv_result[i][j] : 0;
+                relu_result[i][j] <= (conv_result[i][j][2*ACTIV_BITS-1] == 0) ? conv_result[i][j][ACTIV_BITS-1:0] : 0;
             end
         end
 

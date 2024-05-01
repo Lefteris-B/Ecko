@@ -48,8 +48,9 @@ always @(posedge clk or negedge rst_n) begin
         // Compute softmax values
         for (i = 0; i < OUTPUT_SIZE; i = i + 1) begin
             reg [ACTIV_BITS-1:0] softmax_temp;
-            softmax_temp = ({{ACTIV_BITS{1'b0}}, exp_values[i]} << ACTIV_BITS) / sum_exp;
-            softmax_values[i] = softmax_temp;
+            softmax_temp = ({{(16-$clog2(INPUT_SIZE)){1'b0}}, exp_values[i]} << ACTIV_BITS) / sum_exp;
+	    softmax_temp = softmax_temp[ACTIV_BITS-1:0]; 
+            softmax_values[i] = softmax_temp[ACTIV_BITS-1:0];
         end
 
         // Assign output

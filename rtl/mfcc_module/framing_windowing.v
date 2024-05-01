@@ -289,14 +289,15 @@ end
 
 // Calculate Hamming window coefficients using a combinational always block
 integer i;
+reg [15:0] cosine;
+reg [23:0] idx;
+
 always @(*) begin
     for (i = 0; i < 256; i = i + 1) begin
         if (i < frame_size) begin
-            reg [15:0] cosine;
-            reg [23:0] idx;
-
             // Calculate the cosine index based on i and frame_size
-            idx = (i * 256) / (frame_size - 1);
+            idx = (i * 256) / ({24'd0, frame_size} - 1);
+            idx = idx[23:0];  // Truncate to 24 bits
 
             // Look up the cosine value from the pre-computed table
             cosine = cos_table[idx[7:0]];
@@ -304,7 +305,10 @@ always @(*) begin
             // Calculate the Hamming window coefficient
             hamming_window[i] = Q15_ONE[15:0] - ((Q15_HALF[15:0] * cosine) >>> 15);
         end else begin
-            hamming_window[i] = 16'h0;
+            // Assign default values when i is outside the frame_size range
+            idx = 0;
+            cosine = 0;
+            hamming_window[i] = 0;
         end
     end
 end

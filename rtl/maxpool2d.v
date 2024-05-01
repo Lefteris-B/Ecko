@@ -56,7 +56,7 @@ always @(posedge clk or negedge rst_n) begin
                             end
                         end
                     end
-                    data_out[((i/STRIDE)*((INPUT_WIDTH+STRIDE-1)/STRIDE) + (j/STRIDE))*INPUT_CHANNELS + k] <= max_value[INPUT_WIDTH-1:0];
+                  data_out[((i/STRIDE)*((INPUT_WIDTH+STRIDE-1)/STRIDE) + (j/STRIDE))*INPUT_CHANNELS + k] <= max_value[INPUT_WIDTH-1];
                 end
             end
         end

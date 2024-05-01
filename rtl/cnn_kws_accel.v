@@ -10,7 +10,7 @@
 `include "fully_connected.v"
 `include "softmax.v"
 
-module cnn_kws_accel #(
+module  cnn_kws_accel #(
     parameter NUM_KEYWORDS = 10,
     parameter MFCC_FEATURES = 40,
     parameter ACTIV_BITS = 8,
@@ -75,7 +75,7 @@ mfcc_accelerator mfcc (
     .rst_n(rst_n),
     .audio_in(audio_in),
     .audio_valid(audio_valid),
-    .mfcc_out(mfcc_out),
+    .mfcc_out(mfcc_out[31:0]),
     .mfcc_valid(mfcc_valid),
     .frame_size(frame_size),
     .frame_overlap(frame_overlap),

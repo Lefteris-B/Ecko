@@ -25,49 +25,6 @@ reg [31:0] filtered_dft [0:NUM_MEL_FILTERS-1];
 reg [$clog2(NUM_MEL_FILTERS)-1:0] filter_idx;
 reg [$clog2(DFT_SIZE)-1:0] dft_idx;
 
-// Mel-scale filterbank computation
-always @(posedge clk or negedge rst_n) begin
-    if (!rst_n) begin
-        mel_fbank_out <= 32'h0;
-        mel_fbank_valid <= 1'b0;
-        filter_idx <= 'h0;
-        dft_idx <= 'h0;
-    end else if (dft_valid) begin
-        // Apply mel-scale filters to DFT output
-        for (int i = 0; i < NUM_MEL_FILTERS; i = i + 1) begin
-            if (dft_idx >= mel_filter_centers[i] && dft_idx < mel_filter_centers[i+1]) begin
-                filtered_dft[i] <= filtered_dft[i] + (dft_out * mel_filter_coefs[i][dft_idx]);
-            end
-        end
-
-        // Increment DFT index
-        dft_idx <= dft_idx + 1;
-
-        // Check if all DFT bins have been processed
-        if (dft_idx == DFT_SIZE[$clog2(DFT_SIZE)-1:0] - 1) begin
-            // Output the accumulated mel-frequency filterbank output
-            mel_fbank_out <= filtered_dft[filter_idx];
-            mel_fbank_valid <= 1'b1;
-
-            // Increment filter index
-            filter_idx <= filter_idx + 1;
-
-            // Reset DFT index and filtered DFT accumulator
-            dft_idx <= 'h0;
-            filtered_dft[filter_idx] <= 32'h0;
-
-            // Check if all filters have been processed
-            if (filter_idx == NUM_MEL_FILTERS - 1) begin
-                filter_idx <= 'h0;
-            end
-        end else begin
-            mel_fbank_valid <= 1'b0;
-        end
-    end else begin
-        mel_fbank_valid <= 1'b0;
-    end
-end
-
 // Initialize mel-scale filter center frequencies
 initial begin
     mel_filter_centers[0] = 8'd0;
@@ -197,6 +154,49 @@ mel_filter_coefs[38] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 mel_filter_coefs[39] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4095, 8191, 12287, 16383, 20479, 24575, 28671, 32767, 28671, 24575, 20479, 16383, 12287, 8191, 4095, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
   end
+
+// Mel-scale filterbank computation
+always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+        mel_fbank_out <= 32'h0;
+        mel_fbank_valid <= 1'b0;
+        filter_idx <= 'h0;
+        dft_idx <= 'h0;
+    end else if (dft_valid) begin
+        // Apply mel-scale filters to DFT output
+        for (int i = 0; i < NUM_MEL_FILTERS; i = i + 1) begin
+            if (dft_idx >= mel_filter_centers[i] && dft_idx < mel_filter_centers[i+1]) begin
+                filtered_dft[i] <= filtered_dft[i] + (dft_out * mel_filter_coefs[i][dft_idx]);
+            end
+        end
+
+        // Increment DFT index
+        dft_idx <= dft_idx + 1;
+
+        // Check if all DFT bins have been processed
+        if (dft_idx == DFT_SIZE[$clog2(DFT_SIZE)-1:0] - 1) begin
+            // Output the accumulated mel-frequency filterbank output
+            mel_fbank_out <= filtered_dft[filter_idx];
+            mel_fbank_valid <= 1'b1;
+
+            // Increment filter index
+            filter_idx <= filter_idx + 1;
+
+            // Reset DFT index and filtered DFT accumulator
+            dft_idx <= 'h0;
+            filtered_dft[filter_idx] <= 32'h0;
+
+            // Check if all filters have been processed
+            if (filter_idx == NUM_MEL_FILTERS - 1) begin
+                filter_idx <= 'h0;
+            end
+        end else begin
+            mel_fbank_valid <= 1'b0;
+        end
+    end else begin
+        mel_fbank_valid <= 1'b0;
+    end
+end
 
 endmodule
 `endif

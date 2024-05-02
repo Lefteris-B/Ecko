@@ -101,15 +101,15 @@ module mfcc_accelerator #(
     );
 
     // Output assignment
-    always @(posedge clk or negedge rst_n) begin
-        if (!rst_n) begin
-            mfcc_out <= 'b0;
-            mfcc_valid <= 1'b0;
-        end else begin
-            mfcc_out <= dct_out;
-            mfcc_valid <= dct_valid;
-        end
+always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+        mfcc_out <= 'b0;
+        mfcc_valid <= 1'b0;
+    end else begin
+        mfcc_out <= dct_out;
+        mfcc_valid <= dct_valid;
     end
+end
 
 endmodule
 `endif

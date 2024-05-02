@@ -2,7 +2,7 @@
 `define MAXPOOL2D_V
 
 module maxpool2d #(
-    parameter INPUT_WIDTH = 32,
+    parameter INPUT_WIDTH = 40,
     parameter INPUT_HEIGHT = 1,
     parameter INPUT_CHANNELS = 8,
     parameter KERNEL_SIZE = 2,
@@ -13,7 +13,7 @@ module maxpool2d #(
     input wire rst_n,
     input wire [INPUT_WIDTH*INPUT_HEIGHT*INPUT_CHANNELS*ACTIV_BITS-1:0] data_in,
     input wire data_valid,
-    output reg [0:(INPUT_WIDTH/STRIDE)*(INPUT_HEIGHT/STRIDE)*INPUT_CHANNELS*ACTIV_BITS-1] data_out,
+    output reg [(INPUT_WIDTH/STRIDE)*INPUT_CHANNELS*ACTIV_BITS-1:0] data_out,
     output reg data_out_valid
 );
 
@@ -64,7 +64,7 @@ module maxpool2d #(
                                 end
                             end
                         end
-                        data_out[i*(OUTPUT_WIDTH*INPUT_CHANNELS*ACTIV_BITS) + j*(INPUT_CHANNELS*ACTIV_BITS) + k*ACTIV_BITS +: ACTIV_BITS] <= max_value[k];
+                        data_out[i*OUTPUT_WIDTH*INPUT_CHANNELS*ACTIV_BITS + j*INPUT_CHANNELS*ACTIV_BITS + k*ACTIV_BITS +: ACTIV_BITS] <= max_value[k];
                     end
                 end
             end

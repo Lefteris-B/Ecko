@@ -6,7 +6,7 @@ module conv2d #(
     parameter INPUT_HEIGHT = 1,
     parameter INPUT_CHANNELS = 1,
     parameter KERNEL_SIZE = 3,
-    parameter NUM_FILTERS = 32,
+    parameter NUM_FILTERS = 8,
     parameter PADDING = 1,
     parameter ACTIV_BITS = 8
 ) (
@@ -28,10 +28,10 @@ module conv2d #(
 
     // Declare internal signals
     reg [ACTIV_BITS-1:0] input_buffer [0:INPUT_HEIGHT-1][0:INPUT_WIDTH-1];
-    reg [2*ACTIV_BITS-1:0] conv_result [0:INPUT_HEIGHT-1][0:INPUT_WIDTH-1];
-    reg [ACTIV_BITS-1:0] relu_result [0:INPUT_HEIGHT-1][0:INPUT_WIDTH-1];
+    reg [2*ACTIV_BITS-1:0] conv_result [0:INPUT_HEIGHT-1][0:INPUT_WIDTH-1][0:NUM_FILTERS-1];
+    reg [ACTIV_BITS-1:0] relu_result [0:INPUT_HEIGHT-1][0:INPUT_WIDTH-1][0:NUM_FILTERS-1];
 
-    // Load weights and biases
+ // Load weights and biases
     integer i, j, k, l;
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
@@ -67,7 +67,6 @@ module conv2d #(
             end
         end
     end
-
     // Convolution operation
     integer m, n, p, q;
     always @(posedge clk or negedge rst_n) begin
@@ -76,8 +75,10 @@ module conv2d #(
             for (i = 0; i < INPUT_HEIGHT; i = i + 1) begin
                 for (j = 0; j < INPUT_WIDTH; j = j + 1) begin
                     input_buffer[i][j] <= 0;
-                    conv_result[i][j] <= 0;
-                    relu_result[i][j] <= 0;
+                    for (k = 0; k < NUM_FILTERS; k = k + 1) begin
+                        conv_result[i][j][k] <= 0;
+                        relu_result[i][j][k] <= 0;
+                    end
                 end
             end
             data_out <= 0;
@@ -94,19 +95,18 @@ module conv2d #(
             // Perform convolution
             for (m = 0; m < INPUT_HEIGHT; m = m + 1) begin
                 for (n = 0; n < INPUT_WIDTH; n = n + 1) begin
-                    conv_result[m][n] = 0;
                     for (p = 0; p < NUM_FILTERS; p = p + 1) begin
+                        conv_result[m][n][p] = biases[p];
                         for (q = 0; q < INPUT_CHANNELS; q = q + 1) begin
                             for (i = 0; i < KERNEL_SIZE; i = i + 1) begin
                                 for (j = 0; j < KERNEL_SIZE; j = j + 1) begin
                                     if (m + i - PADDING >= 0 && m + i - PADDING < INPUT_HEIGHT &&
                                         n + j - PADDING >= 0 && n + j - PADDING < INPUT_WIDTH) begin
-                                        conv_result[m][n] = conv_result[m][n] + weights[p][q][i][j] * input_buffer[m + i - PADDING][n + j - PADDING];
+                                        conv_result[m][n][p] = conv_result[m][n][p] + weights[p][q][i][j] * input_buffer[m + i - PADDING][n + j - PADDING];
                                     end
                                 end
                             end
                         end
-                        conv_result[m][n] = conv_result[m][n] + {{ACTIV_BITS{1'b0}}, biases[p]};
                     end
                 end
             end
@@ -114,7 +114,9 @@ module conv2d #(
             // Apply ReLU activation
             for (i = 0; i < INPUT_HEIGHT; i = i + 1) begin
                 for (j = 0; j < INPUT_WIDTH; j = j + 1) begin
-                    relu_result[i][j] <= (conv_result[i][j][2*ACTIV_BITS-1] == 0) ? conv_result[i][j][ACTIV_BITS-1:0] : 0;
+                    for (k = 0; k < NUM_FILTERS; k = k + 1) begin
+                        relu_result[i][j][k] = (conv_result[i][j][k][2*ACTIV_BITS-1] == 0) ? conv_result[i][j][k][ACTIV_BITS-1:0] : 0;
+                    end
                 end
             end
 
@@ -122,7 +124,7 @@ module conv2d #(
             for (i = 0; i < INPUT_HEIGHT; i = i + 1) begin
                 for (j = 0; j < INPUT_WIDTH; j = j + 1) begin
                     for (k = 0; k < NUM_FILTERS; k = k + 1) begin
-                        data_out[i*INPUT_WIDTH*NUM_FILTERS*ACTIV_BITS + j*NUM_FILTERS*ACTIV_BITS + k*ACTIV_BITS +: ACTIV_BITS] <= relu_result[i][j];
+                        data_out[i*INPUT_WIDTH*NUM_FILTERS*ACTIV_BITS + j*NUM_FILTERS*ACTIV_BITS + k*ACTIV_BITS +: ACTIV_BITS] <= relu_result[i][j][k];
                     end
                 end
             end

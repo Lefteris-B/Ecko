@@ -12,6 +12,7 @@ module framing_windowing (
     output reg framed_valid
 );
 
+
 // Hamming window coefficients
 reg [15:0] hamming_window [0:255];
 
@@ -290,14 +291,15 @@ end
 // Calculate Hamming window coefficients using a combinational always block
 integer i;
 reg [15:0] cosine;
+reg [31:0] idx_temp;
 reg [23:0] idx;
 
 always @(*) begin
     for (i = 0; i < 256; i = i + 1) begin
         if (i < frame_size) begin
             // Calculate the cosine index based on i and frame_size
-            idx = (i * 256) / ({24'd0, frame_size} - 1);
-            idx = idx[23:0];  // Truncate to 24 bits
+            idx_temp = (i * 256) / ({24'd0, frame_size} - 1);
+            idx = idx_temp[23:0];
 
             // Look up the cosine value from the pre-computed table
             cosine = cos_table[idx[7:0]];
@@ -306,6 +308,7 @@ always @(*) begin
             hamming_window[i] = Q15_ONE[15:0] - ((Q15_HALF[15:0] * cosine) >>> 15);
         end else begin
             // Assign default values when i is outside the frame_size range
+            idx_temp = 0;
             idx = 0;
             cosine = 0;
             hamming_window[i] = 0;

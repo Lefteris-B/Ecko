@@ -1,12 +1,15 @@
 `ifndef MFCC_ACCELERATOR_V
 `define MFCC_ACCELERATOR_V
 
-module mfcc_accelerator (
+module mfcc_accelerator #(
+    parameter MFCC_FEATURES = 40,
+    parameter ACTIV_BITS = 8
+) (
     input wire clk,
     input wire rst_n,
     input wire [15:0] audio_in,
     input wire audio_valid,
-    output reg [31:0] mfcc_out,
+    output reg [MFCC_FEATURES*ACTIV_BITS-1:0] mfcc_out,
     output reg mfcc_valid,
     input wire [7:0] frame_size,
     input wire [7:0] frame_overlap,
@@ -21,11 +24,11 @@ module mfcc_accelerator (
     wire framed_valid;
     wire [31:0] dft_out;
     wire dft_valid;
-    wire [25:0] mel_fbank_out;
+    wire [31:0] mel_fbank_out;
     wire mel_fbank_valid;
     wire [31:0] log_out;
     wire log_valid;
-    wire [31:0] dct_out;
+    wire [MFCC_FEATURES*ACTIV_BITS-1:0] dct_out;
     wire dct_valid;
 
     // Instantiate sub-modules
@@ -63,15 +66,18 @@ module mfcc_accelerator (
         .dft_valid(dft_valid)
     );
 
-    // Mel-scale filterbank application
-    mel_filterbank mel_fbank (
-        .clk(clk),
-        .rst_n(rst_n),
-        .dft_out(dft_out),
-        .dft_valid(dft_valid),
-        .mel_fbank_out(mel_fbank_out),
-        .mel_fbank_valid(mel_fbank_valid)
-    );
+	mel_filterbank #(
+	    .DFT_SIZE(256),
+	    .NUM_MEL_FILTERS(40),
+	    .MEL_FBANK_OUT_BITS(32)
+	) mel_fbank (
+	    .clk(clk),
+	    .rst_n(rst_n),
+	    .dft_out(dft_out),
+	    .dft_valid(dft_valid),
+	    .mel_fbank_out(mel_fbank_out),
+	    .mel_fbank_valid(mel_fbank_valid)
+	);
 
     // Logarithm computation
     logarithm_comp log_comp (
@@ -97,7 +103,7 @@ module mfcc_accelerator (
     // Output assignment
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
-            mfcc_out <= 32'h0;
+            mfcc_out <= 'b0;
             mfcc_valid <= 1'b0;
         end else begin
             mfcc_out <= dct_out;

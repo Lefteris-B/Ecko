@@ -2,7 +2,7 @@
 `define SOFTMAX_V
 
 module softmax #(
-    parameter INPUT_SIZE = 128,
+    parameter INPUT_SIZE = 10,
     parameter ACTIV_BITS = 8
 ) (
     input wire clk,
@@ -44,7 +44,7 @@ module softmax #(
 
             // Compute softmax values
             for (i = 0; i < INPUT_SIZE; i = i + 1) begin
-                softmax_values[i] <= ({{(2*ACTIV_BITS-$clog2(INPUT_SIZE)){1'b0}}, exp_values[i]} << ACTIV_BITS) / sum_exp;
+                softmax_values[i] <= (exp_values[i] << ACTIV_BITS) / sum_exp[2*ACTIV_BITS-1:ACTIV_BITS];
             end
 
             // Assign output

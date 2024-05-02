@@ -1,9 +1,10 @@
 `ifndef FULLY_CONNECTED_V
 `define FULLY_CONNECTED_V
 
+
 module fully_connected #(
-    parameter INPUT_SIZE = 512,
-    parameter OUTPUT_SIZE = 128,
+    parameter INPUT_SIZE = 640,
+    parameter OUTPUT_SIZE = 64,
     parameter ACTIV_BITS = 8
 ) (
     input wire clk,

@@ -14,7 +14,7 @@ module cnn_kws_accel #(
     parameter NUM_KEYWORDS = 10,
     parameter MFCC_FEATURES = 40,
     parameter ACTIV_BITS = 8,
-    parameter FC1_INPUT_SIZE = 640,
+    parameter FC1_INPUT_SIZE = (MFCC_FEATURES/2)*(CONV2_NUM_FILTERS),
     parameter FC1_OUTPUT_SIZE = 64,
     parameter FC2_INPUT_SIZE = 64,
     parameter FC2_OUTPUT_SIZE = NUM_KEYWORDS,
@@ -60,7 +60,7 @@ module cnn_kws_accel #(
     wire conv1_valid;
     wire [MFCC_FEATURES*CONV2_NUM_FILTERS*ACTIV_BITS-1:0] conv2_out;
     wire conv2_valid;
-    wire [FC1_INPUT_SIZE*ACTIV_BITS-1:0] maxpool_out;
+    wire [(MFCC_FEATURES/2)*CONV2_NUM_FILTERS*ACTIV_BITS-1:0] maxpool_out;
     wire maxpool_valid;
     wire [FC1_OUTPUT_SIZE*ACTIV_BITS-1:0] fc1_out;
     wire fc1_valid;
@@ -145,6 +145,7 @@ conv2d #(
 	    .data_out(maxpool_out),
 	    .data_out_valid(maxpool_valid)
 	);
+	
 	fully_connected #(
 	    .INPUT_SIZE(FC1_INPUT_SIZE),
 	    .OUTPUT_SIZE(FC1_OUTPUT_SIZE),
@@ -199,7 +200,7 @@ conv2d #(
             kws_result <= 'b0;
             kws_valid <= 1'b0;
         end else begin
-            kws_result <= softmax_out[NUM_KEYWORDS*ACTIV_BITS-1:0];
+            kws_result <= softmax_out[NUM_KEYWORDS-1:0];
             kws_valid <= softmax_valid;
         end
     end

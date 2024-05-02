@@ -2,7 +2,7 @@
 `define CONV2D_V
 
 module conv2d #(
-    parameter INPUT_WIDTH = 32,
+    parameter INPUT_WIDTH = 40,
     parameter INPUT_HEIGHT = 1,
     parameter INPUT_CHANNELS = 1,
     parameter KERNEL_SIZE = 3,
@@ -27,11 +27,11 @@ module conv2d #(
     reg [ACTIV_BITS-1:0] biases [0:NUM_FILTERS-1];
 
     // Declare internal signals
-    reg [ACTIV_BITS-1:0] input_buffer [0:INPUT_HEIGHT-1][0:INPUT_WIDTH-1];
+    reg [ACTIV_BITS-1:0] input_buffer [0:INPUT_HEIGHT-1][0:INPUT_WIDTH-1][0:INPUT_CHANNELS-1];
     reg [2*ACTIV_BITS-1:0] conv_result [0:INPUT_HEIGHT-1][0:INPUT_WIDTH-1][0:NUM_FILTERS-1];
     reg [ACTIV_BITS-1:0] relu_result [0:INPUT_HEIGHT-1][0:INPUT_WIDTH-1][0:NUM_FILTERS-1];
 
- // Load weights and biases
+    // Load weights and biases
     integer i, j, k, l;
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
@@ -53,7 +53,7 @@ module conv2d #(
                     for (j = 0; j < INPUT_CHANNELS; j = j + 1) begin
                         for (k = 0; k < KERNEL_SIZE; k = k + 1) begin
                             for (l = 0; l < KERNEL_SIZE; l = l + 1) begin
-                                weights[i][j][k][l] = weights_in[(i*INPUT_CHANNELS*KERNEL_SIZE*KERNEL_SIZE + j*KERNEL_SIZE*KERNEL_SIZE + k*KERNEL_SIZE + l)*ACTIV_BITS +: ACTIV_BITS];
+                                weights[i][j][k][l] <= weights_in[(i*INPUT_CHANNELS*KERNEL_SIZE*KERNEL_SIZE + j*KERNEL_SIZE*KERNEL_SIZE + k*KERNEL_SIZE + l)*ACTIV_BITS +: ACTIV_BITS];
                             end
                         end
                     end
@@ -67,6 +67,7 @@ module conv2d #(
             end
         end
     end
+
     // Convolution operation
     integer m, n, p, q;
     always @(posedge clk or negedge rst_n) begin
@@ -74,10 +75,12 @@ module conv2d #(
             // Reset internal signals and output
             for (i = 0; i < INPUT_HEIGHT; i = i + 1) begin
                 for (j = 0; j < INPUT_WIDTH; j = j + 1) begin
-                    input_buffer[i][j] <= 0;
-                    for (k = 0; k < NUM_FILTERS; k = k + 1) begin
-                        conv_result[i][j][k] <= 0;
-                        relu_result[i][j][k] <= 0;
+                    for (k = 0; k < INPUT_CHANNELS; k = k + 1) begin
+                        input_buffer[i][j][k] <= 0;
+                    end
+                    for (m = 0; m < NUM_FILTERS; m = m + 1) begin
+                        conv_result[i][j][m] <= 0;
+                        relu_result[i][j][m] <= 0;
                     end
                 end
             end
@@ -86,10 +89,15 @@ module conv2d #(
         end else if (data_valid) begin
             // Shift input data into buffer
             for (i = 0; i < INPUT_HEIGHT; i = i + 1) begin
-                for (j = 0; j < INPUT_WIDTH - 1; j = j + 1) begin
-                    input_buffer[i][j] <= input_buffer[i][j + 1];
+                for (j = 0; j < INPUT_WIDTH; j = j + 1) begin
+                    for (k = 0; k < INPUT_CHANNELS; k = k + 1) begin
+                        if (j < INPUT_WIDTH - 1) begin
+                            input_buffer[i][j][k] <= input_buffer[i][j+1][k];
+                        end else begin
+                            input_buffer[i][j][k] <= data_in[i*INPUT_WIDTH*INPUT_CHANNELS*ACTIV_BITS + j*INPUT_CHANNELS*ACTIV_BITS + k*ACTIV_BITS +: ACTIV_BITS];
+                        end
+                    end
                 end
-                input_buffer[i][INPUT_WIDTH - 1] <= data_in[i*INPUT_WIDTH*INPUT_CHANNELS*ACTIV_BITS +: ACTIV_BITS];
             end
 
             // Perform convolution
@@ -102,7 +110,7 @@ module conv2d #(
                                 for (j = 0; j < KERNEL_SIZE; j = j + 1) begin
                                     if (m + i - PADDING >= 0 && m + i - PADDING < INPUT_HEIGHT &&
                                         n + j - PADDING >= 0 && n + j - PADDING < INPUT_WIDTH) begin
-                                        conv_result[m][n][p] = conv_result[m][n][p] + weights[p][q][i][j] * input_buffer[m + i - PADDING][n + j - PADDING];
+                                        conv_result[m][n][p] = conv_result[m][n][p] + weights[p][q][i][j] * input_buffer[m + i - PADDING][n + j - PADDING][q];
                                     end
                                 end
                             end
@@ -120,15 +128,15 @@ module conv2d #(
                 end
             end
 
-	// Assign output
-	for (i = 0; i < INPUT_HEIGHT; i = i + 1) begin
-	    for (j = 0; j < INPUT_WIDTH; j = j + 1) begin
-		for (k = 0; k < NUM_FILTERS; k = k + 1) begin
-		    data_out[i*INPUT_WIDTH*NUM_FILTERS*ACTIV_BITS + j*NUM_FILTERS*ACTIV_BITS + k*ACTIV_BITS +: ACTIV_BITS] <= relu_result[i][j][k];
-		end
-	    end
-	end
-	data_out_valid <= 1;
+            // Assign output
+            for (i = 0; i < INPUT_HEIGHT; i = i + 1) begin
+                for (j = 0; j < INPUT_WIDTH; j = j + 1) begin
+                    for (k = 0; k < NUM_FILTERS; k = k + 1) begin
+                        data_out[i*INPUT_WIDTH*NUM_FILTERS*ACTIV_BITS + j*NUM_FILTERS*ACTIV_BITS + k*ACTIV_BITS +: ACTIV_BITS] <= relu_result[i][j][k];
+                    end
+                end
+            end
+            data_out_valid <= 1;
         end else begin
             data_out_valid <= 0;
         end

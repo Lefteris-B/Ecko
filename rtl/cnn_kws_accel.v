@@ -10,7 +10,7 @@
 `include "fully_connected.v"
 `include "softmax.v"
 
-module kws #(
+module cnn_kws_accel #(
     parameter NUM_KEYWORDS = 10,
     parameter MFCC_FEATURES = 40,
     parameter ACTIV_BITS = 8,
@@ -60,7 +60,7 @@ module kws #(
     wire conv1_valid;
     wire [MFCC_FEATURES*CONV2_NUM_FILTERS*ACTIV_BITS-1:0] conv2_out;
     wire conv2_valid;
-    wire [MFCC_FEATURES*CONV2_NUM_FILTERS*ACTIV_BITS/2-1:0] maxpool_out;
+    wire [FC1_INPUT_SIZE*ACTIV_BITS-1:0] maxpool_out;
     wire maxpool_valid;
     wire [FC1_OUTPUT_SIZE*ACTIV_BITS-1:0] fc1_out;
     wire fc1_valid;
@@ -130,7 +130,6 @@ conv2d #(
     .load_biases(conv2_load_biases)
 );
 
-    // Max pooling layer
 	maxpool2d #(
 	    .INPUT_WIDTH(MFCC_FEATURES),
 	    .INPUT_HEIGHT(1),
@@ -146,8 +145,6 @@ conv2d #(
 	    .data_out(maxpool_out),
 	    .data_out_valid(maxpool_valid)
 	);
-
-	 // Fully connected layer 1
 	fully_connected #(
 	    .INPUT_SIZE(FC1_INPUT_SIZE),
 	    .OUTPUT_SIZE(FC1_OUTPUT_SIZE),
@@ -159,12 +156,12 @@ conv2d #(
 	    .data_valid(maxpool_valid),
 	    .data_out(fc1_out),
 	    .data_out_valid(fc1_valid),
-	    .weights_in(fc1_weights),
+	    .weights_in(fc1_weights[FC1_OUTPUT_SIZE*FC1_INPUT_SIZE*ACTIV_BITS-1:0]),
 	    .biases_in(fc1_biases),
 	    .load_weights(fc1_load_weights),
 	    .load_biases(fc1_load_biases)
 	);
-
+	
 	// Fully connected layer 2 (output layer)
 	fully_connected #(
 	    .INPUT_SIZE(FC2_INPUT_SIZE),

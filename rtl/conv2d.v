@@ -96,7 +96,7 @@ module conv2d #(
             for (m = 0; m < INPUT_HEIGHT; m = m + 1) begin
                 for (n = 0; n < INPUT_WIDTH; n = n + 1) begin
                     for (p = 0; p < NUM_FILTERS; p = p + 1) begin
-                        conv_result[m][n][p] = biases[p];
+                        conv_result[m][n][p] = {{(2*ACTIV_BITS-ACTIV_BITS){1'b0}}, biases[p]};
                         for (q = 0; q < INPUT_CHANNELS; q = q + 1) begin
                             for (i = 0; i < KERNEL_SIZE; i = i + 1) begin
                                 for (j = 0; j < KERNEL_SIZE; j = j + 1) begin
@@ -120,15 +120,15 @@ module conv2d #(
                 end
             end
 
-            // Assign output
-            for (i = 0; i < INPUT_HEIGHT; i = i + 1) begin
-                for (j = 0; j < INPUT_WIDTH; j = j + 1) begin
-                    for (k = 0; k < NUM_FILTERS; k = k + 1) begin
-                        data_out[i*INPUT_WIDTH*NUM_FILTERS*ACTIV_BITS + j*NUM_FILTERS*ACTIV_BITS + k*ACTIV_BITS +: ACTIV_BITS] <= relu_result[i][j][k];
-                    end
-                end
-            end
-            data_out_valid <= 1;
+	// Assign output
+	for (i = 0; i < INPUT_HEIGHT; i = i + 1) begin
+	    for (j = 0; j < INPUT_WIDTH; j = j + 1) begin
+		for (k = 0; k < NUM_FILTERS; k = k + 1) begin
+		    data_out[i*INPUT_WIDTH*NUM_FILTERS*ACTIV_BITS + j*NUM_FILTERS*ACTIV_BITS + k*ACTIV_BITS +: ACTIV_BITS] <= relu_result[i][j][k];
+		end
+	    end
+	end
+	data_out_valid <= 1;
         end else begin
             data_out_valid <= 0;
         end

@@ -69,7 +69,7 @@ module fully_connected #(
         end else if (data_valid) begin
             // Perform matrix multiplication
             for (i = 0; i < OUTPUT_SIZE; i = i + 1) begin
-                acc_result[i] = biases[i];
+                acc_result[i] = {{(2*ACTIV_BITS-ACTIV_BITS){1'b0}}, biases[i]};
                 for (j = 0; j < INPUT_SIZE; j = j + 1) begin
                     acc_result[i] = acc_result[i] + weights[i][j] * data_in[j*ACTIV_BITS +: ACTIV_BITS];
                 end

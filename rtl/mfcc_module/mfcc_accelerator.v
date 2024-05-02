@@ -80,14 +80,14 @@ module mfcc_accelerator #(
 	);
 
     // Logarithm computation
-    logarithm_comp log_comp (
-        .clk(clk),
-        .rst_n(rst_n),
-        .mel_fbank_out(mel_fbank_out),
-        .mel_fbank_valid(mel_fbank_valid),
-        .log_out(log_out),
-        .log_valid(log_valid)
-    );
+	logarithm_comp log_comp (
+	    .clk(clk),
+	    .rst_n(rst_n),
+	    .mel_fbank_out(mel_fbank_out),
+	    .mel_fbank_valid(mel_fbank_valid),
+	    .log_out(log_out),
+	    .log_valid(log_valid)
+	);
 
     // Discrete Cosine Transform (DCT)
     dct_comp dct (

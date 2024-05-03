@@ -32,7 +32,10 @@ module cnn_kws_accel #(
     input wire [7:0] frame_size,
     input wire [7:0] frame_overlap,
     input wire [7:0] num_mfcc_coeffs,
-    input wire [4095:0] goertzel_coefs,
+    input wire [7:0] goertzel_coefs,
+    output wire goertzel_coefs_start,
+    output wire goertzel_coefs_valid,
+    output wire goertzel_coefs_done,
     input wire [CONV1_NUM_FILTERS*CONV1_KERNEL_SIZE*CONV1_KERNEL_SIZE*ACTIV_BITS-1:0] conv1_weights,
     input wire [CONV1_NUM_FILTERS*ACTIV_BITS-1:0] conv1_biases,
     input wire conv1_load_weights,
@@ -83,8 +86,12 @@ module cnn_kws_accel #(
         .frame_size(frame_size),
         .frame_overlap(frame_overlap),
         .num_mfcc_coeffs(num_mfcc_coeffs),
-        .goertzel_coefs(goertzel_coefs)
+        .goertzel_coefs(goertzel_coefs),
+        .goertzel_coefs_start(goertzel_coefs_start),
+        .goertzel_coefs_valid(goertzel_coefs_valid),
+        .goertzel_coefs_done(goertzel_coefs_done)
     );
+
 
 // Convolutional layer 1
 conv2d #(

@@ -1,59 +1,85 @@
-module hamming_window #(
-    parameter FRAME_SIZE = 256,
-    parameter SAMPLE_WIDTH = 16,
-    parameter COEFF_WIDTH = 16
-)(
-    input wire clk,
-    input wire rst,
-    input wire [SAMPLE_WIDTH-1:0] audio_sample,
-    input wire sample_valid,
-    output reg [SAMPLE_WIDTH-1:0] windowed_sample,
-    output reg sample_ready
+module hamming_window (
+  input wire clk,
+  input wire rst,
+  input wire [15:0] sample_in,
+  input wire sample_valid,
+  output reg [15:0] sample_out,
+  output reg sample_out_valid
 );
 
-localparam NUM_COEFFS = FRAME_SIZE;
-localparam ALPHA = 16'h0800; // Alpha value for Hamming window (0.54 in fixed-point)
+  localparam N = 256; // Frame size
+  localparam Q = 15; // Fixed-point precision
+  localparam NF = 512; // Power-of-two size for zero-padding
 
-reg [$clog2(NUM_COEFFS)-1:0] coeff_idx;
-wire [COEFF_WIDTH-1:0] cosine_approx;
-wire [SAMPLE_WIDTH+COEFF_WIDTH-1:0] mult_result;
+  reg [15:0] sample_buffer [0:N-1];
+  reg [$clog2(NF)-1:0] sample_count;
+  reg [$clog2(N)-1:0] coeff_count;
+  reg [15:0] coeff;
 
-// Piecewise linear approximation of cosine function for Hamming window
-function [COEFF_WIDTH-1:0] cosine_approx_func;
-    input [$clog2(NUM_COEFFS)-1:0] idx;
-    reg [COEFF_WIDTH-1:0] approx;
+  // Fixed-point constants
+  localparam [15:0] CONST_054 = 16'h4666; // 0.54 in Q15
+  localparam [15:0] CONST_046 = 16'h3999; // 0.46 in Q15
+  localparam [15:0] CONST_2PI = 16'h6487; // 2π in Q15
+
+  // CORDIC approximation of cosine
+  function [15:0] cordic_cos;
+    input [15:0] angle;
+    reg [15:0] x, y, z;
+    reg [3:0] i;
     begin
-        if (idx < (NUM_COEFFS / 4)) begin
-            approx = COEFF_WIDTH'h7FFF - (idx << 1);
-        end else if (idx < (NUM_COEFFS / 2)) begin
-            approx = COEFF_WIDTH'h0000 + (idx << 1);
-        end else if (idx < (3 * NUM_COEFFS / 4)) begin
-            approx = COEFF_WIDTH'h0000 - (idx << 1);
+      x = 16'h4DBA; // 0.607252935 in Q15
+      y = 0;
+      z = angle;
+
+      for (i = 0; i < 12; i = i + 1) begin
+        if (z[15] == 1) begin
+          x = x - (y >>> i);
+          y = y + (x >>> i);
+          z = z + cordic_atan_table[i];
         end else begin
-            approx = COEFF_WIDTH'h8001 + (idx << 1);
+          x = x + (y >>> i);
+          y = y - (x >>> i);
+          z = z - cordic_atan_table[i];
         end
-        cosine_approx_func = approx;
+      end
+
+      cordic_cos = x;
     end
-endfunction
+  endfunction
 
-assign cosine_approx = cosine_approx_func(coeff_idx);
+  // CORDIC arctangent table (Q15)
+  localparam [0:11] cordic_atan_table = {
+    16'h3243, 16'h1DAC, 16'h0FAD, 16'h07F5,
+    16'h03FE, 16'h01FF, 16'h0100, 16'h0080,
+    16'h0040, 16'h0020, 16'h0010, 16'h0008
+  };
 
-// Multiply audio sample with approximated Hamming window coefficient
-assign mult_result = audio_sample * (ALPHA - ((ALPHA * cosine_approx) >>> COEFF_WIDTH));
-
-always @(posedge clk) begin
+ always @(posedge clk) begin
     if (rst) begin
-        coeff_idx <= 0;
-        sample_ready <= 0;
+      sample_count <= 0;
+      coeff_count <= 0;
+      sample_out <= 0;
+      sample_out_valid <= 0;
     end else begin
-        if (sample_valid) begin
-            windowed_sample <= mult_result[SAMPLE_WIDTH+COEFF_WIDTH-1:COEFF_WIDTH];
-            coeff_idx <= (coeff_idx == NUM_COEFFS-1) ? 0 : coeff_idx + 1;
-            sample_ready <= 1;
+      if (sample_valid) begin
+        sample_buffer[sample_count] <= sample_in;
+        sample_count <= (sample_count == N-1) ? 0 : sample_count + 1;
+
+        if (sample_count == N-1) begin
+          coeff_count <= 0;
+          sample_out_valid <= 1;
+        end else if (coeff_count < N) begin
+          coeff <= CONST_054 - ((CONST_046 * cordic_cos((CONST_2PI * coeff_count) / (N-1))) >>> Q);
+          sample_out <= (sample_buffer[coeff_count] * coeff) >>> Q;
+          coeff_count <= coeff_count + 1;
+        end else if (coeff_count < NF) begin
+          sample_out <= 0; // Zero-padding
+          coeff_count <= coeff_count + 1;
         end else begin
-            sample_ready <= 0;
+          sample_out_valid <= 0;
         end
+      end
     end
-end
+  end
 
 endmodule

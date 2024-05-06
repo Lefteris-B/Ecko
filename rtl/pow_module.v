@@ -5,8 +5,8 @@ module pow_module #(
   input wire rst,
   input wire signed [15:0] data_in,
   input wire data_valid,
-  output reg signed [31:0] data_out,
-  output reg data_out_valid
+  output reg signed [31:0] data_out
+  //output reg data_out_valid
 );
 
   localparam POWER = 2;  // Fixed power value (e.g., power of 2)
@@ -19,7 +19,7 @@ module pow_module #(
     if (rst) begin
       data_reg <= 0;
       data_out <= 0;
-      data_out_valid <= 0;
+      //data_out_valid <= 0;
       state <= 0;
       counter <= 0;
     end else begin
@@ -38,13 +38,13 @@ module pow_module #(
             counter <= counter + 1;
           end else begin
             data_out <= (data_reg * data_reg) >>> Q;
-            data_out_valid <= 1;
+           // data_out_valid <= 1;
             state <= 2;
           end
         end
 
         2: begin
-          data_out_valid <= 0;
+         // data_out_valid <= 0;
           state <= 0;
         end
       endcase

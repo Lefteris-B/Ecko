@@ -3,8 +3,8 @@ module hamming_window (
   input wire rst,
   input wire [15:0] sample_in,
   input wire sample_valid,
-  output reg [15:0] sample_out,
-  output reg sample_out_valid
+  output reg [15:0] sample_out
+  //output reg sample_out_valid
 );
 
   localparam N = 256; // Frame size
@@ -27,19 +27,19 @@ module hamming_window (
     reg [15:0] x, y, z;
     reg [3:0] i;
     begin
-      x = 16'h4DBA; // 0.607252935 in Q15
-      y = 0;
-      z = angle;
+      x <= 16'h4DBA; // 0.607252935 in Q15
+      y <= 0;
+      z <= angle;
 
       for (i = 0; i < 12; i = i + 1) begin
         if (z[15] == 1) begin
-          x = x - (y >>> i);
-          y = y + (x >>> i);
-          z = z + cordic_atan_table[i];
+          x <= x - (y >>> i);
+          y <= y + (x >>> i);
+          z <= z + cordic_atan_table[i];
         end else begin
-          x = x + (y >>> i);
-          y = y - (x >>> i);
-          z = z - cordic_atan_table[i];
+          x <= x + (y >>> i);
+          y <= y - (x >>> i);
+          z <= z - cordic_atan_table[i];
         end
       end
 
@@ -59,7 +59,7 @@ module hamming_window (
       sample_count <= 0;
       coeff_count <= 0;
       sample_out <= 0;
-      sample_out_valid <= 0;
+      //sample_out_valid <= 0;
     end else begin
       if (sample_valid) begin
         sample_buffer[sample_count] <= sample_in;
@@ -67,7 +67,7 @@ module hamming_window (
 
         if (sample_count == N-1) begin
           coeff_count <= 0;
-          sample_out_valid <= 1;
+          //sample_out_valid <= 1;
         end else if (coeff_count < N) begin
           coeff <= CONST_054 - ((CONST_046 * cordic_cos((CONST_2PI * coeff_count) / (N-1))) >>> Q);
           sample_out <= (sample_buffer[coeff_count] * coeff) >>> Q;
@@ -75,9 +75,9 @@ module hamming_window (
         end else if (coeff_count < NF) begin
           sample_out <= 0; // Zero-padding
           coeff_count <= coeff_count + 1;
-        end else begin
-          sample_out_valid <= 0;
-        end
+        end //else begin
+          //sample_out_valid <= 0;
+        //end
       end
     end
   end

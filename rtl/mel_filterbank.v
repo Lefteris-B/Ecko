@@ -26,9 +26,34 @@ module mel_filterbank #(
   function signed [COEFF_WIDTH-1:0] mel_coeff;
     input [$clog2(NUM_FILTERS)-1:0] filter_idx;
     input [$clog2(FILTER_SIZE)-1:0] coeff_idx;
-    // Implement the Mel filter coefficient calculation here
-    // based on the filter index and coefficient index
-    // Return the calculated coefficient value
+    reg signed [COEFF_WIDTH-1:0] result;
+    begin
+      // Implement the Mel filter coefficient calculation here
+      // based on the filter index and coefficient index
+      if (filter_idx < 10) begin
+        if (coeff_idx < 10)
+          result = 16'h7FFF;
+        else if (coeff_idx < 20)
+          result = 16'h4000;
+        else
+          result = 16'h1000;
+      end else if (filter_idx < 30) begin
+        if (coeff_idx < 5)
+          result = 16'h7FFF;
+        else if (coeff_idx < 15)
+          result = 16'h6000;
+        else
+          result = 16'h2000;
+      end else begin
+        if (coeff_idx < 3)
+          result = 16'h7FFF;
+        else if (coeff_idx < 8)
+          result = 16'h5000;
+        else
+          result = 16'h3000;
+      end
+      mel_coeff = result;
+    end
   endfunction
 
   always @(posedge clk) begin

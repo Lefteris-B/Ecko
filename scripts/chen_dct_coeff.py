@@ -27,7 +27,11 @@ precision = 15
 # Generate the fixed-point DCT coefficients
 dct_coefficients = generate_dct_coefficients(N, precision)
 
-# Print the coefficients in Verilog format
+# Print the coefficients in Verilog format for the refactored case statement
 for k in range(N):
-    coeff_str = ', '.join([f"{coeff:#06x}" for coeff in dct_coefficients[k]])
-    print(f"{k}: coeff = (input_counter == 0) ? {dct_coefficients[k][0]:#06x} : (input_counter == 1) ? {dct_coefficients[k][1]:#06x} : (input_counter == 2) ? {dct_coefficients[k][2]:#06x} : (input_counter == 3) ? {dct_coefficients[k][3]:#06x} : (input_counter == 4) ? {dct_coefficients[k][4]:#06x} : (input_counter == 5) ? {dct_coefficients[k][5]:#06x} : (input_counter == 6) ? {dct_coefficients[k][6]:#06x} : (input_counter == 7) ? {dct_coefficients[k][7]:#06x} : (input_counter == 8) ? {dct_coefficients[k][8]:#06x} : (input_counter == 9) ? {dct_coefficients[k][9]:#06x} : (input_counter == 10) ? {dct_coefficients[k][10]:#06x} : (input_counter == 11) ? {dct_coefficients[k][11]:#06x} : (input_counter == 12) ? {dct_coefficients[k][12]:#06x} : (input_counter == 13) ? {dct_coefficients[k][13]:#06x} : (input_counter == 14) ? {dct_coefficients[k][14]:#06x} : (input_counter == 15) ? {dct_coefficients[k][15]:#06x} : (input_counter == 16) ? {dct_coefficients[k][16]:#06x} : (input_counter == 17) ? {dct_coefficients[k][17]:#06x} : (input_counter == 18) ? {dct_coefficients[k][18]:#06x} : (input_counter == 19) ? {dct_coefficients[k][19]:#06x} : (input_counter == 20) ? {dct_coefficients[k][20]:#06x} : (input_counter == 21) ? {dct_coefficients[k][21]:#06x} : (input_counter == 22) ? {dct_coefficients[k][22]:#06x} : (input_counter == 23) ? {dct_coefficients[k][23]:#06x} : (input_counter == 24) ? {dct_coefficients[k][24]:#06x} : (input_counter == 25) ? {dct_coefficients[k][25]:#06x} : (input_counter == 26) ? {dct_coefficients[k][26]:#06x} : (input_counter == 27) ? {dct_coefficients[k][27]:#06x} : (input_counter == 28) ? {dct_coefficients[k][28]:#06x} : (input_counter == 29) ? {dct_coefficients[k][29]:#06x} : (input_counter == 30) ? {dct_coefficients[k][30]:#06x} : {dct_coefficients[k][31]:#06x};")
+    for n in range(N):
+        coeff = dct_coefficients[k][n]
+        if coeff != 0:
+            print(f"      {{5'd{k}, 5'd{n}}}: coeff = {coeff:#06x};")
+
+print("      default: coeff = 16'h0000;")

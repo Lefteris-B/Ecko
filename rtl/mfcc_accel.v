@@ -1,10 +1,10 @@
-module mfcc (
+module mfcc_accel (
   input wire clk,
   input wire rst,
   input wire [15:0] audio_sample,
   input wire sample_valid,
-  output reg [3:0] mfcc_feature,
-  output reg mfcc_valid
+  output reg [3:0] mfcc_feature
+  //output reg mfcc_valid
 );
 
   // Declare signals for interconnecting submodules
@@ -13,7 +13,8 @@ module mfcc (
   wire [31:0] pow_out;
   wire [31:0] mel_out;
   wire [10:0] log_out;
-
+  wire [3:0]  mfcc_result;
+  
   // Instantiate submodules
   hamming_window hamming (
     .clk(clk),
@@ -60,8 +61,10 @@ module mfcc (
     .rst(rst),
     .data_in(log_out),
     .data_valid(sample_valid),
-    .mfcc_out(mfcc_feature),
-    .mfcc_valid(mfcc_valid)
+    .dct_out(mfcc_feature)
+    //.dct_valid(mfcc_valid)
   );
+
+
 
 endmodule

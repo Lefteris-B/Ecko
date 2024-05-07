@@ -1,3 +1,6 @@
+`ifndef PREEMPHASIS_FILTER_V
+`define PREEMPHASIS_FILTER_V
+
 module preemphasis_filter (
     input wire clk,
     input wire rst_n,
@@ -8,7 +11,7 @@ module preemphasis_filter (
 );
 
 // Configurable pre-emphasis coefficient (0.97 by default)
-parameter PREEMPH_COEF = 16'h7D71; // 0.97 in Q15 format
+localparam PREEMPH_COEF = 16'h7D71; // 0.97 in Q15 format
 
 // Internal registers
 reg [15:0] audio_delay;
@@ -29,3 +32,4 @@ always @(posedge clk or negedge rst_n) begin
 end
 
 endmodule
+`endif

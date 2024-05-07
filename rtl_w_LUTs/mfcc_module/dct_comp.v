@@ -1,10 +1,16 @@
-module dct_comp (
+`ifndef DCT_COMP_V
+`define DCT_COMP_V
+
+module dct_comp #(
+    parameter MFCC_FEATURES = 40,
+    parameter ACTIV_BITS = 8
+) (
     input wire clk,
     input wire rst_n,
     input wire [31:0] log_out,
     input wire log_valid,
-    input wire [7:0] num_mfcc_coeffs,
-    output reg [31:0] dct_out,
+    input wire [4:0] num_mfcc_coeffs,
+    output reg [MFCC_FEATURES*ACTIV_BITS-1:0] dct_out,
     output reg dct_valid
 );
 
@@ -15,41 +21,12 @@ localparam MAX_COEFFS = 32;
 reg [31:0] dct_coeffs [0:MAX_COEFFS-1][0:MAX_COEFFS-1];
 
 // Intermediate variables
-reg [31:0] dct_sum;
-reg [$clog2(MAX_COEFFS)-1:0] coeff_idx;
+reg [31:0] dct_sum [0:MFCC_FEATURES-1];
+reg [4:0] coeff_idx;
 reg [$clog2(MAX_COEFFS)-1:0] log_idx;
 
-// DCT computation pipeline
-always @(posedge clk or negedge rst_n) begin
-    if (!rst_n) begin
-        dct_out <= 32'h0;
-        dct_valid <= 1'b0;
-        dct_sum <= 32'h0;
-        coeff_idx <= 'h0;
-        log_idx <= 'h0;
-    end else if (log_valid) begin
-        dct_sum <= dct_sum + (log_out * dct_coeffs[coeff_idx][log_idx]);
-        log_idx <= log_idx + 1;
 
-        if (log_idx == num_mfcc_coeffs - 1) begin
-            dct_out <= dct_sum;
-            dct_valid <= 1'b1;
-            dct_sum <= 32'h0;
-            coeff_idx <= coeff_idx + 1;
-            log_idx <= 'h0;
-
-            if (coeff_idx == num_mfcc_coeffs - 1) begin
-                coeff_idx <= 'h0;
-            end
-        end else begin
-            dct_valid <= 1'b0;
-        end
-    end else begin
-        dct_valid <= 1'b0;
-    end
-end
-
-// Initialize DCT coefficients 
+// Initialize DCT coefficients
 initial begin
       dct_coeffs[0][0] = 32'h0B504F33;
       dct_coeffs[0][1] = 32'h0B504F33;
@@ -1078,4 +1055,46 @@ initial begin
 
 end
 
+integer i, j;
+
+
+// DCT computation pipeline
+always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+        dct_out <= 'b0;
+        dct_valid <= 1'b0;
+        for (i = 0; i < MFCC_FEATURES; i = i + 1) begin
+            dct_sum[i] <= 32'b0;
+        end
+        coeff_idx <= 5'h0;
+        log_idx <= 'h0;
+    end else if (log_valid) begin
+        for (i = 0; i < MFCC_FEATURES; i = i + 1) begin
+            dct_sum[i] <= dct_sum[i] + (log_out * dct_coeffs[coeff_idx][i]);
+        end
+        log_idx <= log_idx + 1;
+
+        if (coeff_idx == num_mfcc_coeffs - 1) begin
+            for (j = 0; j < MFCC_FEATURES; j = j + 1) begin
+                dct_out[j*ACTIV_BITS +: ACTIV_BITS] <= dct_sum[j][ACTIV_BITS-1:0];
+            end
+            dct_valid <= 1'b1;
+            for (i = 0; i < MFCC_FEATURES; i = i + 1) begin
+                dct_sum[i] <= 32'b0;
+            end
+            coeff_idx <= 5'h0;
+            log_idx <= 'h0;
+        end else if (log_idx == MAX_COEFFS[$clog2(MAX_COEFFS)-1:0] - 1) begin
+            coeff_idx <= coeff_idx + 1;
+            log_idx <= 'h0;
+            dct_valid <= 1'b0;
+        end else begin
+            dct_valid <= 1'b0;
+        end
+    end else begin
+        dct_valid <= 1'b0;
+    end
+end
+
 endmodule
+`endif

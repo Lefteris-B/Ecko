@@ -45,52 +45,31 @@ The adoption of the CNN-KWS model in Ecko leverages its compact architecture to 
 
 
 ### Mel-frequency Cepstral Coefficients (MFCC)
-To design the input stage for the KWS accelerator, which involves extracting Mel-frequency cepstral coefficients (MFCC) features from the audio signal, we'll implement the MFCC feature extraction algorithm  several steps, including pre-emphasis, framing, windowing, Fourier transform, mel-filterbank, logarithm, and discrete cosine transform (DCT).
 
-Here's a high-level overview of the components (Verilog Modules) for the MFCC feature extraction:
+Audio Features Extractor
+This repository contains an implementation of an audio features extractor, focusing on efficiency and low power consumption. The project is inspired by the paper "Integer-Only Approximated MFCC for Ultra-Low Power Audio NN Processing on Multi-Core MCUs". The implementation utilizes a Verilog-based approach and incorporates various optimizations for resource-constrained environments.
 
-1. Audio input interface:
-   - Design an interface to receive the audio samples from an external source, such as an analog-to-digital converter (ADC) or a digital audio interface (e.g., I2S).
-   - Implement the necessary control signals and data registers to capture and store the audio samples.
+Methodology
+The implementation follows an optimized processing pipeline, incorporating the following steps:
 
-2. Pre-emphasis filter:
-   - Apply a high-pass filter to the audio samples to emphasize higher frequencies and improve signal-to-noise ratio.
-   - Implement the pre-emphasis filter using a simple first-order finite impulse response (FIR) filter in Verilog.
+Hamming Windowing: The input audio samples are processed using the Hamming window function to reduce spectral leakage and improve frequency estimation accuracy.
 
-3. Framing and windowing:
-   - Divide the audio samples into overlapping frames of fixed size (e.g., 25ms) with a certain stride (e.g., 10ms).
-   - Apply a window function (e.g., Hamming window) to each frame to reduce spectral leakage.
-   - Implement the framing and windowing operations using shift registers and multipliers in Verilog.
+Periodogram Calculation: Instead of using the traditional Fast Fourier Transform (FFT), a Periodogram module is employed to compute the squared magnitude of complex values. This avoids the expensive square root operation and reduces computational complexity.
 
-4. Fourier transform:
-   - Compute the Fourier transform of each windowed frame to convert the time-domain signal into the frequency domain.
-   - Implement the Fast Fourier Transform (FFT) algorithm in Verilog, using a combination of butterfly operations and twiddle factor multiplications.
+Power Computation: A power module is introduced after the Periodogram stage to compute the power of the signal. This involves appropriate scaling to prevent overflow and maintain accuracy.
 
-5. Mel-filterbank:
-   - Apply a set of triangular mel-scale filters to the frequency spectrum to extract the mel-frequency components.
-   - Implement the mel-filterbank using a bank of triangular filters, each centered at a specific mel-frequency, and accumulate the energy in each filter using multipliers and adders in Verilog.
+Mel Filtering: Mel filtering is implemented as a sparse matrix multiply operation, with Mel filter coefficients stored in ROM. This step is crucial for capturing human auditory perception characteristics.
 
-6. Logarithm:
-   - Take the logarithm of the mel-filterbank energies to compress the dynamic range and mimic human perception of loudness.
-   - Implement the logarithm operation using a lookup table (LUT) or an approximation algorithm (e.g., Taylor series) in Verilog.
+Logarithmic Compression: A logarithmic operation is applied to the output of the Mel filtering stage to compress the dynamic range of the features.
 
-7. Discrete Cosine Transform (DCT):
-   - Apply DCT to the log mel-filterbank energies to decorrelate the features and obtain the final MFCC coefficients.
-   - Implement the DCT algorithm in Verilog using a combination of butterfly operations and cosine factor multiplications.
+Discrete Cosine Transform (DCT): Finally, a fixed-point INT16 DCT is performed to transform the logarithmic features into a compact representation suitable for further processing or analysis.
+Implementation Details
 
-8. Output interface:
-   - Design an interface to output the computed MFCC features to the subsequent stages of the KWS accelerator, such as the CNN model.
-   - Implement the necessary control signals and data registers to transfer the MFCC features.
+Top-Level Module: The Verilog implementation includes a top-level module with INT16 input and output ports for audio samples and MFCC features, respectively. Control signals are provided to manage the processing stages.
 
-#### MFCC feature extraction optimization
+Sub-Modules: Each processing stage is instantiated as a sub-module within the top-level design. These modules are designed to efficiently handle the specified operations while maintaining low resource utilization.
 
-1. Fixed-point arithmetic: Use fixed-point representation for the audio samples and intermediate calculations to reduce hardware complexity and resource utilization.
-
-2. Pipelining: Divide the MFCC algorithm into multiple pipeline stages to improve throughput and enable parallel processing of audio frames.
-
-3. Resource sharing: Share hardware resources, such as multipliers and adders, across different stages of the MFCC algorithm to minimize area and power consumption.
-
-4. Approximations: Explore approximations for complex operations like logarithm and DCT to simplify hardware implementation while maintaining acceptable accuracy.
+Optimizations: Various optimizations are applied at each stage, including the use of fixed-point arithmetic, lookup tables, and ROM storage for coefficients and intermediate results.
 
 
 

@@ -7,8 +7,8 @@ module dct_module #(
   input wire rst,
   input wire signed [Q_L-1:0] data_in,
   input wire data_valid,
-  output reg signed [Q_D-1:0] dct_out
-  //output reg dct_valid
+  output reg signed [Q_D-1:0] dct_out,
+  output reg dct_valid
 );
 
   localparam COEFF_WIDTH = 16;
@@ -47,7 +47,7 @@ module dct_module #(
       output_counter <= 0;
       accumulator <= 0;
       dct_out <= 0;
-      //dct_valid <= 0;
+      dct_valid <= 0;
       state <= 0;
     end else begin
       case (state)
@@ -69,7 +69,7 @@ module dct_module #(
 
           if (input_counter == N - 1) begin
             dct_out <= accumulator >>> (Q_L + COEFF_WIDTH - Q_D);
-            //dct_valid <= 1;
+            dct_valid <= 1;
             accumulator <= 0;
             output_counter <= output_counter + 1;
             input_counter <= 0;

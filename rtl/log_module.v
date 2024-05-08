@@ -6,8 +6,8 @@ module log_module #(
   input wire rst,
   input wire signed [31:0] data_in,
   input wire data_valid,
-  output reg signed [Q_L-1:0] log_out
-  //output reg log_valid
+  output reg signed [Q_L-1:0] log_out,
+  output reg log_valid
 );
 
   localparam INT_BITS = 32 - Q_M;
@@ -26,7 +26,7 @@ module log_module #(
       frac_part_shifted <= 0;
       shift_count <= 0;
       log_out <= 0;
-      //log_valid <= 0;
+      log_valid <= 0;
       state <= 0;
     end else begin
       case (state)
@@ -46,7 +46,7 @@ module log_module #(
             state <= 2;
           end else begin
             log_out <= frac_part >> (FRAC_BITS - Q_L);
-            //log_valid <= 1;
+            log_valid <= 1;
             state <= 0;
           end
         end

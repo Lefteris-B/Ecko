@@ -3,8 +3,8 @@ module hamming_window (
   input wire rst,
   input wire [15:0] sample_in,
   input wire sample_valid,
-  output reg [15:0] sample_out
-  //output reg sample_out_valid
+  output reg [15:0] sample_out,
+  output reg sample_out_valid
 );
 
   localparam N = 256; // Frame size
@@ -47,19 +47,19 @@ module hamming_window (
     end
   endfunction
 
-  // CORDIC arctangent table (Q15)
-  localparam [0:11] cordic_atan_table = {
-    16'h3243, 16'h1DAC, 16'h0FAD, 16'h07F5,
-    16'h03FE, 16'h01FF, 16'h0100, 16'h0080,
-    16'h0040, 16'h0020, 16'h0010, 16'h0008
-  };
+   // CORDIC arctangent table (Q15)
+    localparam [11:0] cordic_atan_table = {
+       16'h3243, 16'h1DAC, 16'h0FAD, 16'h07F5,
+       16'h03FE, 16'h01FF, 16'h0100, 16'h0080,
+       16'h0040, 16'h0020, 16'h0010, 16'h0008
+    };
 
  always @(posedge clk) begin
     if (rst) begin
       sample_count <= 0;
       coeff_count <= 0;
       sample_out <= 0;
-      //sample_out_valid <= 0;
+      sample_out_valid <= 0;
     end else begin
       if (sample_valid) begin
         sample_buffer[sample_count] <= sample_in;
@@ -67,7 +67,7 @@ module hamming_window (
 
         if (sample_count == N-1) begin
           coeff_count <= 0;
-          //sample_out_valid <= 1;
+          sample_out_valid <= 1;
         end else if (coeff_count < N) begin
           coeff <= CONST_054 - ((CONST_046 * cordic_cos((CONST_2PI * coeff_count) / (N-1))) >>> Q);
           sample_out <= (sample_buffer[coeff_count] * coeff) >>> Q;
@@ -75,9 +75,9 @@ module hamming_window (
         end else if (coeff_count < NF) begin
           sample_out <= 0; // Zero-padding
           coeff_count <= coeff_count + 1;
-        end //else begin
-          //sample_out_valid <= 0;
-        //end
+        end else begin
+          sample_out_valid <= 0;
+        end
       end
     end
   end

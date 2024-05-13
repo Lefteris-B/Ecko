@@ -2,20 +2,20 @@ module log_module #(
   parameter Q_M = 15,  // Number of fractional bits for Mel filter coefficients
   parameter Q_L = 11   // Number of fractional bits for logarithm output
 ) (
-  input wire clk,
-  input wire rst,
-  input wire signed [31:0] data_in,
-  input wire data_valid,
-  output reg signed [Q_L-1:0] log_out,
-  output reg log_valid
+    input wire clk,
+    input wire rst,
+    input wire signed [31:0] data_in, // INT32 Q30
+    input wire data_valid,
+    output reg signed [15:0] log_out, // INT16 Q11
+    output reg log_valid
 );
 
   localparam INT_BITS = 32 - Q_M;
   localparam FRAC_BITS = Q_M;
 
-  reg signed [INT_BITS-1:0] int_part;
-  reg signed [FRAC_BITS-1:0] frac_part;
-  reg signed [FRAC_BITS-1:0] frac_part_shifted;
+  reg signed [19:0] int_part; // INT20 Q0
+  reg signed [11:0] frac_part; // INT12 Q11
+  reg signed [11:0] frac_part_shifted; // INT12 Q11
   reg [$clog2(FRAC_BITS)-1:0] shift_count;
   reg [1:0] state;
 

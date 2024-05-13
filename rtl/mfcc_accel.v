@@ -1,39 +1,46 @@
 module mfcc_accel (
     input wire clk,
     input wire rst,
-    input wire [15:0] audio_sample,
+    input wire signed [15:0] audio_sample, // INT16 Q15
     input wire sample_valid,
-    output reg [15:0] mfcc_feature,
+    output reg signed [15:0] mfcc_feature, // INT16 Q4
     output reg mfcc_valid
 );
 
 // Declare signals for interconnecting submodules
-wire [15:0] hamming_out;
-wire hamming_valid;
-wire [31:0] periodogram_out;
+wire signed [15:0] hanning_out_real; // INT16 Q15
+wire signed [15:0] hanning_out_imag; // INT16 Q15
+wire hanning_valid;
+
+wire signed [31:0] periodogram_out; // INT32 Q30
 wire periodogram_valid;
-wire [31:0] pow_out;
+
+wire signed [31:0] pow_out; // INT32 Q30
 wire pow_valid;
-wire [31:0] mel_out;
+
+wire signed [31:0] mel_out; // INT32 Q30
 wire mel_valid;
-wire [15:0] log_out;
+
+wire signed [15:0] log_out; // INT16 Q11
 wire log_valid;
 
 // Instantiate submodules
-hamming_window hamming (
+hanning_window hanning (
     .clk(clk),
     .rst(rst),
     .sample_in(audio_sample),
     .sample_valid(sample_valid),
-    .sample_out(hamming_out),
-    .sample_out_valid(hamming_valid)
+    .sample_out_real(hanning_out_real),
+    .sample_out_imag(hanning_out_imag),
+    .sample_out_valid(hanning_valid)
 );
 
 periodogram_squared periodogram (
     .clk(clk),
     .rst(rst),
-    .sample_in(hamming_out),
-    .sample_valid(hamming_valid),
+    .sample_in_real(hanning_out_real),
+    .sample_in_imag(hanning_out_imag),
+    .sample_valid(hanning_valid),
     .periodogram_out(periodogram_out),
     .periodogram_valid(periodogram_valid)
 );
@@ -67,7 +74,7 @@ log_module log (
 
 dct_module dct (
     .clk(clk),
-    .rst(rst),  
+    .rst(rst),
     .data_in(log_out),
     .data_valid(log_valid),
     .dct_out(mfcc_feature),

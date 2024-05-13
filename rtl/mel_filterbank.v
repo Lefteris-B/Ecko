@@ -4,22 +4,22 @@ module mel_filterbank #(
   parameter FILTER_SIZE = 23,   // Size of each Mel filter
   parameter Q_M = 15            // Number of fractional bits for Mel filter coefficients
 ) (
-  input wire clk,
-  input wire rst,
-  input wire signed [31:0] data_in,
-  input wire data_valid,
-  output reg signed [31:0] mel_out,
-  output reg mel_valid
+    input wire clk,
+    input wire rst,
+    input wire signed [31:0] data_in, // INT32 Q30
+    input wire data_valid,
+    output reg signed [31:0] mel_out, // INT32 Q30
+    output reg mel_valid
 );
 
   localparam NUM_COEFFS = NUM_FILTERS * FILTER_SIZE;
   localparam COEFF_WIDTH = 16;
 
-  reg signed [31:0] periodogram [0:FILTER_SIZE-1];
+  reg signed [31:0] periodogram [0:FILTER_SIZE-1]; // INT32 Q30
+  reg signed [15:0] coeff; // INT16 Q15
+  reg signed [47:0] accumulator; // INT48 Q45
   reg [$clog2(NUM_FILTERS)-1:0] filter_counter;
   reg [$clog2(FILTER_SIZE)-1:0] coeff_counter;
-  reg signed [COEFF_WIDTH-1:0] coeff;
-  reg signed [47:0] accumulator;
   reg [1:0] state;
 
   // Mel filter coefficients

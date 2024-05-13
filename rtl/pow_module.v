@@ -3,15 +3,15 @@ module pow_module #(
 ) (
     input wire clk,
     input wire rst,
-    input wire signed [31:0] data_in,
+    input wire signed [31:0] data_in, // INT32 Q30
     input wire data_valid,
-    output reg signed [31:0] data_out,
+    output reg signed [31:0] data_out, // INT32 Q30
     output reg data_out_valid
 );
 
 localparam POWER = 2; // Fixed power value (e.g., power of 2)
 
-reg signed [31:0] data_reg;
+reg signed [31:0] data_reg; // INT32 Q30
 
 always @(posedge clk) begin
     if (rst) begin

@@ -5,9 +5,9 @@ module dct_module #(
 ) (
   input wire clk,
   input wire rst,
-  input wire signed [Q_L-1:0] data_in,
+  input wire signed [15:0] data_in,
   input wire data_valid,
-  output reg signed [Q_D-1:0] dct_out,
+  output reg signed [15:0] dct_out,
   output reg dct_valid
 );
 

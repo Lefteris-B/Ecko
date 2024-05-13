@@ -3,7 +3,7 @@ module mfcc_accel (
     input wire rst,
     input wire [15:0] audio_sample,
     input wire sample_valid,
-    output reg [3:0] mfcc_feature,
+    output reg [15:0] mfcc_feature,
     output reg mfcc_valid
 );
 
@@ -16,7 +16,7 @@ wire [31:0] pow_out;
 wire pow_valid;
 wire [31:0] mel_out;
 wire mel_valid;
-wire [10:0] log_out;
+wire [15:0] log_out;
 wire log_valid;
 
 // Instantiate submodules

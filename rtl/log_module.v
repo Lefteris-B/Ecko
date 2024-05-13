@@ -63,7 +63,7 @@ module log_module #(
             shift_count <= shift_count + 1;
           end else begin
             log_out <= log_out + (int_part << (Q_L - $clog2(INT_BITS)));
-            //log_valid <= 1;
+            log_valid <= 1;
             state <= 0;
           end
         end

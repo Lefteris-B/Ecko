@@ -1,20 +1,20 @@
 module dct_module #(
     parameter Q_L = 11, // Number of fractional bits for logarithm output
-    parameter Q_D = 4, // Number of fractional bits for DCT output
-    parameter N = 32 // Size of the DCT input vector
+    parameter Q_D = 4,  // Number of fractional bits for DCT output
+    parameter N = 32    // Size of the DCT input vector
 ) (
     input wire clk,
     input wire rst,
     input wire signed [15:0] data_in, // INT16 Q11
     input wire data_valid,
-    output reg signed [15:0] dct_out, // INT16 Q4
+    output reg [639:0] dct_out, // 40 features * 16 bits = 640 bits
     output reg dct_valid
 );
 
 localparam COEFF_WIDTH = 16;
-reg signed [11:0] input_buffer [0:N-1]; // INT12 Q11
+reg signed [15:0] input_buffer [0:N-1]; // INT16 Q11
 reg [$clog2(N)-1:0] input_counter;
-reg [$clog2(N)-1:0] output_counter;
+reg [5:0] output_counter;
 reg signed [COEFF_WIDTH-1:0] coeff;
 reg signed [Q_L+COEFF_WIDTH-1:0] mult;
 reg signed [Q_L+COEFF_WIDTH-1:0] accumulator;
@@ -54,9 +54,9 @@ always @(posedge clk) begin
         case (state)
             0: begin
                 if (data_valid) begin
-                    input_buffer[input_counter] <= data_in[11:0];
+                    input_buffer[input_counter] <= data_in;
                     input_counter <= input_counter + 1;
-                    if ({{27{1'b0}}, input_counter} == N - 1) begin
+                    if (input_counter == N - 1) begin
                         input_counter <= 0;
                         state <= 1;
                     end
@@ -68,13 +68,13 @@ always @(posedge clk) begin
                 accumulator <= accumulator + mult;
                 input_counter <= input_counter + 1;
                 if (input_counter == N - 1) begin
-                    dct_out <= accumulator[26:11] >>> (Q_L + COEFF_WIDTH - Q_D);
-                    dct_valid <= 1;
+                    dct_out[output_counter*16 +: 16] <= accumulator[26:11] >>> (Q_L + COEFF_WIDTH - Q_D);
                     accumulator <= 0;
                     output_counter <= output_counter + 1;
                     input_counter <= 0;
-                    if ({{27{1'b0}}, output_counter} == N - 1) begin
+                    if (output_counter == 39) begin
                         output_counter <= 0;
+                        dct_valid <= 1;
                         state <= 0;
                     end
                 end
@@ -84,3 +84,4 @@ always @(posedge clk) begin
 end
 
 endmodule
+

@@ -14,8 +14,11 @@ module conv2d_psram #(
     output reg [INPUT_WIDTH * INPUT_HEIGHT * NUM_FILTERS * ACTIV_BITS-1:0] data_out,
     output reg data_out_valid,
     
-    // PSRAM controller
-    inout EF_PSRAM_CTRL_V2 psram_ctrl,
+    // PSRAM interface signals
+    output wire psram_sck,
+    output wire psram_ce_n,
+    inout wire [3:0] psram_d,
+    output wire [3:0] psram_douten,
 
     // Base addresses for weights and biases
     input wire [23:0] weight_base_addr,
@@ -35,38 +38,113 @@ module conv2d_psram #(
     reg psram_qpi;
     reg psram_short_cmd;
 
+    // Instantiate PSRAM controller
+    EF_PSRAM_CTRL_V2 psram_ctrl (
+        .clk(clk),
+        .rst_n(rst_n),
+        .addr(psram_addr),
+        .data_i(psram_data_i),
+        .data_o(psram_data_o),
+        .size(psram_size),
+        .start(psram_start),
+        .done(psram_done),
+        .wait_states(8'b0),
+        .cmd(psram_cmd),
+        .rd_wr(psram_rd_wr),
+        .qspi(psram_qspi),
+        .qpi(psram_qpi),
+        .short_cmd(psram_short_cmd),
+        .sck(psram_sck),
+        .ce_n(psram_ce_n),
+        .din(psram_d),
+        .dout(psram_d),
+        .douten(psram_douten)
+    );
+
     // Declare internal signals
     reg [ACTIV_BITS-1:0] weights [0:NUM_FILTERS-1][0:INPUT_CHANNELS-1][0:KERNEL_SIZE-1][0:KERNEL_SIZE-1];
     reg [ACTIV_BITS-1:0] biases [0:NUM_FILTERS-1];
+    reg [2*ACTIV_BITS-1:0] conv_result;
+    reg [ACTIV_BITS-1:0] relu_result;
 
-    // Load weights and biases from PSRAM
-    task load_weights_biases;
-        integer i, j, k, l;
-        begin
-            for (i = 0; i < NUM_FILTERS; i = i + 1) begin
-                for (j = 0; j < INPUT_CHANNELS; j = j + 1) begin
-                    for (k = 0; k < KERNEL_SIZE; k = k + 1) begin
-                        for (l = 0; l < KERNEL_SIZE; l = l + 1) begin
-                            // Read weight from PSRAM
-                            psram_addr = weight_base_addr + (i * INPUT_CHANNELS * KERNEL_SIZE * KERNEL_SIZE + j * KERNEL_SIZE * KERNEL_SIZE + k * KERNEL_SIZE + l) * (ACTIV_BITS / 8);
-                            psram_cmd = 8'h03; // read command
-                            psram_start = 1;
-                            wait(psram_done);
-                            psram_start = 0;
-                            weights[i][j][k][l] = psram_data_o[ACTIV_BITS-1:0];
+    // State machine for loading weights and biases
+    reg [3:0] state;
+    integer i, j, k, l;
+    reg [23:0] current_addr;
+
+    localparam IDLE = 4'b0000,
+               LOAD_WEIGHT = 4'b0001,
+               WAIT_WEIGHT = 4'b0010,
+               LOAD_BIAS = 4'b0011,
+               WAIT_BIAS = 4'b0100,
+               DONE = 4'b0101;
+
+    // State transitions and output logic
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            state <= IDLE;
+            psram_start <= 0;
+            psram_addr <= 0;
+            psram_cmd <= 8'h03; // read command
+            psram_rd_wr <= 0; // read operation
+            current_addr <= 0;
+            i <= 0;
+            j <= 0;
+            k <= 0;
+            l <= 0;
+        end else begin
+            case (state)
+                IDLE: begin
+                    state <= LOAD_WEIGHT;
+                end
+                LOAD_WEIGHT: begin
+                    psram_start <= 1;
+                    psram_addr <= weight_base_addr + (i * INPUT_CHANNELS * KERNEL_SIZE * KERNEL_SIZE + j * KERNEL_SIZE * KERNEL_SIZE + k * KERNEL_SIZE + l) * (ACTIV_BITS / 8);
+                    state <= WAIT_WEIGHT;
+                end
+                WAIT_WEIGHT: begin
+                    psram_start <= 0;
+                    if (psram_done) begin
+                        weights[i][j][k][l] <= psram_data_o[ACTIV_BITS-1:0];
+                        l <= l + 1;
+                        if (l == KERNEL_SIZE - 1) begin
+                            l <= 0;
+                            k <= k + 1;
+                            if (k == KERNEL_SIZE - 1) begin
+                                k <= 0;
+                                j <= j + 1;
+                                if (j == INPUT_CHANNELS - 1) begin
+                                    j <= 0;
+                                    i <= i + 1;
+                                    if (i == NUM_FILTERS - 1) begin
+                                        state <= LOAD_BIAS;
+                                    end
+                                end
+                            end
                         end
                     end
                 end
-                // Read bias from PSRAM
-                psram_addr = bias_base_addr + i * (ACTIV_BITS / 8);
-                psram_cmd = 8'h03; // read command
-                psram_start = 1;
-                wait(psram_done);
-                psram_start = 0;
-                biases[i] = psram_data_o[ACTIV_BITS-1:0];
-            end
+                LOAD_BIAS: begin
+                    psram_start <= 1;
+                    psram_addr <= bias_base_addr + i * (ACTIV_BITS / 8);
+                    state <= WAIT_BIAS;
+                end
+                WAIT_BIAS: begin
+                    psram_start <= 0;
+                    if (psram_done) begin
+                        biases[i] <= psram_data_o[ACTIV_BITS-1:0];
+                        i <= i + 1;
+                        if (i == NUM_FILTERS - 1) begin
+                            state <= DONE;
+                        end
+                    end
+                end
+                DONE: begin
+                    // Do nothing, stay in DONE state
+                end
+            endcase
         end
-    endtask
+    end
 
     // Convolution operation
     integer m_conv, n_conv, p_conv, q_conv, i_conv, j_conv, k_conv;
@@ -81,7 +159,7 @@ module conv2d_psram #(
                 for (n_conv = 0; n_conv < INPUT_WIDTH; n_conv = n_conv + 1) begin
                     for (p_conv = 0; p_conv < NUM_FILTERS; p_conv = p_conv + 1) begin
                         // Initialize convolution result with bias
-                        reg [2*ACTIV_BITS-1:0] conv_result = {{(2*ACTIV_BITS-ACTIV_BITS){1'b0}}, biases[p_conv]};
+                        conv_result = {{(2*ACTIV_BITS-ACTIV_BITS){1'b0}}, biases[p_conv]};
                         for (q_conv = 0; q_conv < INPUT_CHANNELS; q_conv = q_conv + 1) begin
                             for (i_conv = 0; i_conv < KERNEL_SIZE; i_conv = i_conv + 1) begin
                                 for (j_conv = 0; j_conv < KERNEL_SIZE; j_conv = j_conv + 1) begin
@@ -93,7 +171,7 @@ module conv2d_psram #(
                             end
                         end
                         // Apply ReLU activation
-                        reg [ACTIV_BITS-1:0] relu_result = (conv_result[2*ACTIV_BITS-1] == 0) ? conv_result[ACTIV_BITS-1:0] : 0;
+                        relu_result = (conv_result[2*ACTIV_BITS-1] == 0) ? conv_result[ACTIV_BITS-1:0] : 0;
                         // Assign output
                         data_out[m_conv * INPUT_WIDTH * NUM_FILTERS * ACTIV_BITS + n_conv * NUM_FILTERS * ACTIV_BITS + p_conv * ACTIV_BITS +: ACTIV_BITS] <= relu_result;
                     end
@@ -105,9 +183,5 @@ module conv2d_psram #(
         end
     end
 
-    // Load weights and biases at startup
-    initial begin
-        load_weights_biases();
-    end
-
 endmodule
+

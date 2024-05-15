@@ -1,7 +1,14 @@
+`ifdef USE_POWER_PINS
+    .vccd1(vccd1),    // User area 1 1.8V power
+    .vssd1(vssd1),    // User area 1 digital ground
+`endif
+
 module cnn_kws_accel (
     input wire clk,
     input wire rst_n,
     input wire start,
+    input wire [15:0] audio_sample, // Audio sample input
+    input wire sample_valid, // New input to indicate the sample is accepted
     output wire done,
     // PSRAM signals
     output wire psram_sck,
@@ -22,6 +29,7 @@ module cnn_kws_accel (
     // State definitions
     typedef enum logic [2:0] {
         IDLE,
+        MFCC,
         CONV1,
         FC1,
         MAXPOOL,
@@ -41,7 +49,8 @@ module cnn_kws_accel (
     always @* begin
         next_state = state;
         case (state)
-            IDLE: if (start) next_state = CONV1;
+            IDLE: if (start) next_state = MFCC;
+            MFCC: if (mfcc_valid) next_state = CONV1;
             CONV1: if (conv1_done) next_state = FC1;
             FC1: if (fc1_done) next_state = MAXPOOL;
             MAXPOOL: if (maxpool_done) next_state = SOFTMAX;
@@ -74,7 +83,10 @@ module cnn_kws_accel (
     // Tristate buffer for psram_d
     assign psram_d = psram_douten ? psram_d_in : 4'bz;
 
-    // Instantiate the convolution and fully connected modules with PSRAM
+    // Instantiate the MFCC feature extractor and other modules with PSRAM
+    wire [639:0] mfcc_feature; // Assuming MFCC output size is 640 bits (40 coefficients * 16 bits)
+    wire mfcc_valid;
+
     wire [23:0] conv1_weight_base_addr = 24'h000000;
     wire [23:0] conv1_bias_base_addr = 24'h000100;
     wire [23:0] fc1_weight_base_addr = 24'h000200;
@@ -99,6 +111,15 @@ module cnn_kws_accel (
     wire [10*8-1:0] softmax_data_out;
     wire softmax_data_out_valid;
 
+    mfcc_accel mfcc (
+        .clk(clk),
+        .rst(rst_n),
+        .audio_sample(audio_sample),
+        .mfcc_feature(mfcc_feature),
+        .mfcc_valid(mfcc_valid),
+        .sample_valid(sample_valid) // Connect sample_valid to mfcc_accel
+    );
+
     conv2d_psram #(
         .INPUT_WIDTH(40),
         .INPUT_HEIGHT(1),
@@ -110,7 +131,7 @@ module cnn_kws_accel (
     ) conv1 (
         .clk(clk),
         .rst_n(rst_n),
-        .data_in(/* Provide data input */),
+        .data_in(mfcc_feature), // MFCC feature as input
         .data_valid(conv1_data_valid),
         .data_out(conv1_data_out),
         .data_out_valid(conv1_data_out_valid),

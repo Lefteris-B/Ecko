@@ -17,29 +17,12 @@ module cnn_kws_accel #(
     input wire audio_valid,
     output reg [NUM_KEYWORDS-1:0] kws_result,
     output reg kws_valid,
-    //input wire [7:0] frame_size,
-    //input wire [7:0] frame_overlap,
-    //input wire [7:0] num_mfcc_coeffs,
-    //input wire [7:0] goertzel_coefs,
-    //output wire goertzel_coefs_start,
-    //output wire goertzel_coefs_valid,
-    //output wire goertzel_coefs_done,
-    input wire [CONV1_NUM_FILTERS*CONV1_KERNEL_SIZE*CONV1_KERNEL_SIZE*ACTIV_BITS-1:0] conv1_weights,
-    input wire [CONV1_NUM_FILTERS*ACTIV_BITS-1:0] conv1_biases,
-    input wire conv1_load_weights,
-    input wire conv1_load_biases,
-    input wire [CONV2_NUM_FILTERS*CONV1_NUM_FILTERS*CONV2_KERNEL_SIZE*CONV2_KERNEL_SIZE*ACTIV_BITS-1:0] conv2_weights,
-    input wire [CONV2_NUM_FILTERS*ACTIV_BITS-1:0] conv2_biases,
-    input wire conv2_load_weights,
-    input wire conv2_load_biases,
-    input wire [FC1_OUTPUT_SIZE*FC1_INPUT_SIZE*ACTIV_BITS-1:0] fc1_weights,
-    input wire [FC1_OUTPUT_SIZE*ACTIV_BITS-1:0] fc1_biases,
-    input wire fc1_load_weights,
-    input wire fc1_load_biases,
-    input wire [FC2_OUTPUT_SIZE*FC2_INPUT_SIZE*ACTIV_BITS-1:0] fc2_weights,
-    input wire [FC2_OUTPUT_SIZE*ACTIV_BITS-1:0] fc2_biases,
-    input wire fc2_load_weights,
-    input wire fc2_load_biases
+
+    // PSRAM interface
+    output wire psram_sck,
+    output wire psram_ce_n,
+    inout wire [3:0] psram_d,
+    output wire [3:0] psram_douten
 );
 
     // MFCC module signals
@@ -60,18 +43,54 @@ module cnn_kws_accel #(
     wire [FC2_OUTPUT_SIZE*ACTIV_BITS-1:0] softmax_out;
     wire softmax_valid;
 
+    // PSRAM signals
+    reg [23:0] psram_addr;
+    reg [31:0] psram_data_i;
+    wire [31:0] psram_data_o;
+    reg [2:0] psram_size;
+    reg psram_start;
+    wire psram_done;
+    reg [7:0] psram_cmd;
+    reg psram_rd_wr;
+    reg psram_qspi;
+    reg psram_qpi;
+    reg psram_short_cmd;
+
+    // Instantiate PSRAM controller
+    EF_PSRAM_CTRL_V2 psram_ctrl (
+        .clk(clk),
+        .rst_n(rst_n),
+        .addr(psram_addr),
+        .data_i(psram_data_i),
+        .data_o(psram_data_o),
+        .size(psram_size),
+        .start(psram_start),
+        .done(psram_done),
+        .wait_states(8'b0),
+        .cmd(psram_cmd),
+        .rd_wr(psram_rd_wr),
+        .qspi(psram_qspi),
+        .qpi(psram_qpi),
+        .short_cmd(psram_short_cmd),
+        .sck(psram_sck),
+        .ce_n(psram_ce_n),
+        .din(psram_d),
+        .dout(psram_d),
+        .douten(psram_douten)
+    );
+
     // MFCC module instantiation
     mfcc_accel mfcc (
         .clk(clk),
-        .rst(rst_n), // Adjusted to rst_n
-        .audio_sample(audio_in), // Adjusted to audio_sample
-        .sample_valid(audio_valid), // Adjusted to sample_valid
-        .mfcc_feature(mfcc_out), // Adjusted to mfcc_feature
-        .mfcc_valid(mfcc_valid) // Adjusted to mfcc_valid
+        .rst(rst_n),
+        .audio_sample(audio_in),
+        .sample_valid(audio_valid),
+        .mfcc_feature(mfcc_out),
+        .mfcc_valid(mfcc_valid)
     );
 
     // Convolutional layer 1
-    conv2d #(
+    conv2d_psram #(
         .INPUT_WIDTH(MFCC_FEATURES),
         .INPUT_HEIGHT(1),
         .INPUT_CHANNELS(1),
@@ -86,14 +105,13 @@ module cnn_kws_accel #(
         .data_valid(mfcc_valid),
         .data_out(conv1_out),
         .data_out_valid(conv1_valid),
-        .weights_in(conv1_weights),
-        .biases_in(conv1_biases),
-        .load_weights(conv1_load_weights),
-        .load_biases(conv1_load_biases)
+        .psram_ctrl(psram_ctrl),
+        .weight_base_addr(24'h000000), // Base address for conv1 weights
+        .bias_base_addr(24'h000400)    // Base address for conv1 biases
     );
 
     // Convolutional layer 2
-    conv2d #(
+    conv2d_psram #(
         .INPUT_WIDTH(MFCC_FEATURES),
         .INPUT_HEIGHT(1),
         .INPUT_CHANNELS(CONV1_NUM_FILTERS),
@@ -108,10 +126,9 @@ module cnn_kws_accel #(
         .data_valid(conv1_valid),
         .data_out(conv2_out),
         .data_out_valid(conv2_valid),
-        .weights_in(conv2_weights),
-        .biases_in(conv2_biases),
-        .load_weights(conv2_load_weights),
-        .load_biases(conv2_load_biases)
+        .psram_ctrl(psram_ctrl),
+        .weight_base_addr(24'h000500), // Base address for conv2 weights
+        .bias_base_addr(24'h000A00)    // Base address for conv2 biases
     );
 
     maxpool2d #(
@@ -130,7 +147,7 @@ module cnn_kws_accel #(
         .data_out_valid(maxpool_valid)
     );
 
-    fully_connected #(
+    fully_connected_psram #(
         .INPUT_SIZE(FC1_INPUT_SIZE),
         .OUTPUT_SIZE(FC1_OUTPUT_SIZE),
         .ACTIV_BITS(ACTIV_BITS)
@@ -141,14 +158,12 @@ module cnn_kws_accel #(
         .data_valid(maxpool_valid),
         .data_out(fc1_out),
         .data_out_valid(fc1_valid),
-        .weights_in(fc1_weights),
-        .biases_in(fc1_biases),
-        .load_weights(fc1_load_weights),
-        .load_biases(fc1_load_biases)
+        .psram_ctrl(psram_ctrl),
+        .weight_base_addr(24'h000B00), // Base address for FC1 weights
+        .bias_base_addr(24'h004C00)    // Base address for FC1 biases
     );
 
-    // Fully connected layer 2 (output layer)
-    fully_connected #(
+    fully_connected_psram #(
         .INPUT_SIZE(FC2_INPUT_SIZE),
         .OUTPUT_SIZE(FC2_OUTPUT_SIZE),
         .ACTIV_BITS(ACTIV_BITS)
@@ -159,10 +174,9 @@ module cnn_kws_accel #(
         .data_valid(fc1_valid),
         .data_out(fc2_out),
         .data_out_valid(fc2_valid),
-        .weights_in(fc2_weights),
-        .biases_in(fc2_biases),
-        .load_weights(fc2_load_weights),
-        .load_biases(fc2_load_biases)
+        .psram_ctrl(psram_ctrl),
+        .weight_base_addr(24'h004D00), // Base address for FC2 weights
+        .bias_base_addr(24'h005000)    // Base address for FC2 biases
     );
 
     // Softmax layer
@@ -190,4 +204,3 @@ module cnn_kws_accel #(
     end
 
 endmodule
-

@@ -4,22 +4,22 @@ module mel_filterbank #(
   parameter FILTER_SIZE = 23,   // Size of each Mel filter
   parameter Q_M = 15            // Number of fractional bits for Mel filter coefficients
 ) (
-  input wire clk,
-  input wire rst,
-  input wire signed [31:0] data_in,
-  input wire data_valid,
-  output reg signed [31:0] mel_out,
-  output reg mel_valid
+    input wire clk,
+    input wire rst,
+    input wire signed [31:0] data_in, // INT32 Q30
+    input wire data_valid,
+    output reg signed [31:0] mel_out, // INT32 Q30
+    output reg mel_valid
 );
 
   localparam NUM_COEFFS = NUM_FILTERS * FILTER_SIZE;
   localparam COEFF_WIDTH = 16;
 
-  reg signed [31:0] periodogram [0:FILTER_SIZE-1];
+  reg signed [31:0] periodogram [0:FILTER_SIZE-1]; // INT32 Q30
+  reg signed [15:0] coeff; // INT16 Q15
+  reg signed [47:0] accumulator; // INT48 Q45
   reg [$clog2(NUM_FILTERS)-1:0] filter_counter;
   reg [$clog2(FILTER_SIZE)-1:0] coeff_counter;
-  reg signed [COEFF_WIDTH-1:0] coeff;
-  reg signed [47:0] accumulator;
   reg [1:0] state;
 
   // Mel filter coefficients
@@ -68,7 +68,7 @@ module mel_filterbank #(
       case (state)
         0: begin
           if (data_valid) begin
-            periodogram[filter_counter] <= data_in;
+            periodogram[filter_counter[4:0]] <= data_in;
             filter_counter <= filter_counter + 1;
             if (filter_counter == FILTER_SIZE - 1) begin
               filter_counter <= 0;
@@ -79,11 +79,11 @@ module mel_filterbank #(
 
         1: begin
           coeff <= mel_coeff(filter_counter, coeff_counter);
-          accumulator <= accumulator + $signed(periodogram[coeff_counter] * coeff);
+          accumulator <= accumulator + {{16{periodogram[coeff_counter][15]}}, periodogram[coeff_counter]} * {{16{coeff[15]}}, coeff};
           coeff_counter <= coeff_counter + 1;
 
           if (coeff_counter == FILTER_SIZE - 1) begin
-            mel_out <= accumulator >>> (Q + Q_M);
+            mel_out <= accumulator[31:0] >>> (Q + Q_M);
             mel_valid <= 1;
             accumulator <= 0;
             coeff_counter <= 0;

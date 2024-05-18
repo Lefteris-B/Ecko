@@ -553,41 +553,40 @@ softmax_data_out
 ```
 ### CNN-KWS Layers 
 
-Layer Details:
-Input Layer MFCC
-Signal Width: 40 bits
-Convolution Layer 1
+- Input Layer Details:
+    - Input Layer MFCC
+    - Signal Width: 40 bits
+   
+ - Convolution Layer 1
+    - Dimensions: 128x128x16
+    - Kernel Size: 3x3
+    - Stride: 1
+    - Signal Width: 16 bits
 
-Dimensions: 128x128x16
-Kernel Size: 3x3
-Stride: 1
-Signal Width: 16 bits
-Pooling Layer 1
+- Pooling Layer 1
+   - Dimensions: 64x64x16
+   - Pool Size: 2x2
+   - Stride: 2
+   - Signal Width: 16 bits
+ 
+- Convolution Layer 2
+   - Dimensions: 32x32x32
+   - Kernel Size: 3x3
+   - Stride: 1
+   - Signal Width: 32 bits
+- Pooling Layer 2
+   - Dimensions: 16x16x32
+   - Pool Size: 2x2
+   - Stride: 2
+   - Signal Width: 32 bits
 
-Dimensions: 64x64x16
-Pool Size: 2x2
-Stride: 2
-Signal Width: 16 bits
-Convolution Layer 2
+- Fully Connected Layer
+   - Dimensions: 128
+   - Signal Width: 32 bits
 
-Dimensions: 32x32x32
-Kernel Size: 3x3
-Stride: 1
-Signal Width: 32 bits
-Pooling Layer 2
-
-Dimensions: 16x16x32
-Pool Size: 2x2
-Stride: 2
-Signal Width: 32 bits
-Fully Connected Layer
-
-Dimensions: 128
-Signal Width: 32 bits
-Output Layer
-
-Dimensions: 10
-Signal Width: 32 bits
+- Output Layer
+   - Dimensions: 10
+   - Signal Width: 32 bits
 
 ### Computational Optimizations 
 

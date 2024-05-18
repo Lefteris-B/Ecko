@@ -1,6 +1,7 @@
 # Ecko: A Keyword Spotting Accelerator for Caravel SoC
 
-Ecko is an open-source hardware accelerator designed specifically for efficient and accurate Keyword Spotting (KWS) on edge devices. Leveraging the power of the "Hello Edge" CNN model and optimized through the Gemmini platform, Ecko seamlessly integrates with the Caravel System-on-Chip to provide real-time speech recognition capabilities.
+Ecko *(greek ἠχώ)* is an open-source hardware accelerator designed specifically for efficient and accurate Keyword Spotting (KWS) on edge devices. Leveraging the power of the "Hello Edge" CNN model and optimized for the caravel platform.
+Ecko seamlessly integrates with the Caravel System-on-Chip to provide real-time speech recognition capabilities.
 
 ## Table of Contents
 - [Introduction](#introduction)
@@ -19,9 +20,11 @@ Ecko aims to push the boundaries of what's possible with AI accelerators on the 
 
 ### Convolutional Neural Networks (CNNs)
 
-Convolutional Neural Networks (CNNs) are central to the Ecko project, providing the backbone for our efficient and accurate Keyword Spotting (KWS) system. The CNN-KWS model, specifically tailored for KWS tasks, was introduced in the influential paper "Hello Edge: Keyword Spotting on Microcontrollers" by Zhang et al. (2017). This model has proven to be highly effective in recognizing keywords from audio inputs with minimal computational resources, making it ideal for edge devices like those powered by the Caravel SoC.
+Convolutional Neural Networks (CNNs) are central to the Ecko project, providing the backbone for our efficient and accurate Keyword Spotting (KWS) system. The CNN-KWS model, specifically tailored for KWS tasks, was introduced in the influential paper ["Hello Edge: Keyword Spotting on Microcontrollers"](https://doi.org/10.48550/arXiv.1711.07128) by Zhang et al. (2017). This model has proven to be highly effective in recognizing keywords from audio inputs with minimal computational resources, making it ideal for edge devices like those powered by the Caravel SoC.
 
 The adoption of the CNN-KWS model in Ecko leverages its compact architecture to maximize performance while maintaining low power consumption. This architecture aligns with our project's goals to create a KWS system that not only operates efficiently in real-time on edge devices but also minimizes energy usage and space requirements. The CNN-KWS model's ability to achieve high accuracy with a relatively small footprint makes it the ideal choice for embedding sophisticated AI capabilities directly onto microcontrollers and SoCs, where space and power are at a premium.
+
+
 
 #### Advantages
 

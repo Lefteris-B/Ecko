@@ -591,7 +591,7 @@ softmax_data_out
 ### Computational Optimizations 
 
 The cnn_kws_accel module employs several computational optimizations to enhance performance and efficiency in keyword spotting applications:
-1.It utilizes parameterizable layers, allowing for tailored configurations that balance accuracy and resource usage according to specific application requirements. Convolution operations are optimized by leveraging parallel processing techniques, which significantly reduce the computational latency. 
+1. It utilizes parameterizable layers, allowing for tailored configurations that balance accuracy and resource usage according to specific application requirements. Convolution operations are optimized by leveraging parallel processing techniques, which significantly reduce the computational latency. 
 2. The module also implements efficient memory management strategies, such as input and output buffering, to minimize data transfer overhead. By applying fixed-point arithmetic rather than floating-point, the design achieves lower power consumption and faster execution, which is critical for real-time processing in embedded systems. 
 3. The use of smaller kernel sizes and stride adjustments in convolution and pooling layers reduces the amount of data processed, further enhancing the speed and efficiency of the model. 
 

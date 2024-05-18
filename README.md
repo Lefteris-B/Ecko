@@ -602,12 +602,13 @@ These optimizations collectively enable the cnn_kws_accel to perform rapid and a
 [↟Back to Top](#ecko-a-keyword-spotting-accelerator-for-caravel-soc)
 
 ## Testing
-Each model was tested using SystemVerilog assertions. That involves writing testbenches that not only apply test cases but also include assertions to verify that the modules behave as expected. 
+Each model was tested using SystemVerilog assertions. That involves writing testbenches that not only apply test cases but also include assertions to verify that the modules behave as expected. Testbenches are located inside /tb folder
 
 [↟Back to Top](#ecko-a-keyword-spotting-accelerator-for-caravel-soc)
 
 ## Verification
 Formal verification is a powerful technique that uses mathematical methods to prove the correctness of a design. We verified the KWS accelerator pipeline using the SymbiYosys (sby) front-end and the Yosys open synthesis suite.
+Verification script is inside /formal_verification folder.
 
 [↟Back to Top](#ecko-a-keyword-spotting-accelerator-for-caravel-soc)
 

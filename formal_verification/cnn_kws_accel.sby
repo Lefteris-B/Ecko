@@ -1,0 +1,64 @@
+[options]
+mode bmc
+depth 100
+engine smtbmc
+
+[engines]
+smtbmc yices
+smtbmc boolector
+
+[script]
+# Read design files
+read_verilog -sv /mnt/data/cnn_kws_accel.v
+read_verilog -sv /mnt/data/conv2d_psram.v
+read_verilog -sv /mnt/data/dct_module.v
+read_verilog -sv /mnt/data/EF_PSRAM_CTRL_V2.v
+read_verilog -sv /mnt/data/fully_connected_psram.v
+read_verilog -sv /mnt/data/hanning_window_imag.v
+read_verilog -sv /mnt/data/hanning_window_real.v
+read_verilog -sv /mnt/data/log_module.v
+read_verilog -sv /mnt/data/maxpool2d_sram.v
+read_verilog -sv /mnt/data/mfcc_accel.v
+read_verilog -sv /mnt/data/mel_filterbank.v
+read_verilog -sv /mnt/data/periodogram_squared.v
+read_verilog -sv /mnt/data/pow_module.v
+read_verilog -sv /mnt/data/softmax_psram.v
+
+# Set the top module
+hierarchy -check -top cnn_kws_accel
+
+# Insert assumptions and constraints
+# Ensure reset initializes state correctly
+assume property (@(posedge clk) reset |=> state == IDLE);
+
+# Ensure start triggers transition from IDLE to RUN
+assume property (@(posedge clk) !reset && state == IDLE && start |=> state == RUN);
+
+# Ensure done signal is asserted in DONE state
+assert property (@(posedge clk) state == DONE |=> done);
+
+# Generate the design for verification
+prep -top cnn_kws_accel
+
+[files]
+/mnt/data/cnn_kws_accel.v
+/mnt/data/conv2d_psram.v
+/mnt/data/dct_module.v
+/mnt/data/EF_PSRAM_CTRL_V2.v
+/mnt/data/fully_connected_psram.v
+/mnt/data/hanning_window_imag.v
+/mnt/data/hanning_window_real.v
+/mnt/data/log_module.v
+/mnt/data/maxpool2d_sram.v
+/mnt/data/mfcc_accel.v
+/mnt/data/mel_filterbank.v
+/mnt/data/periodogram_squared.v
+/mnt/data/pow_module.v
+/mnt/data/softmax_psram.v
+
+[engines]
+smtbmc yices
+smtbmc boolector
+
+[options]
+depth 100

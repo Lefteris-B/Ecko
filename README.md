@@ -23,14 +23,24 @@ Ecko aims to push the boundaries of what's possible with AI accelerators on the 
 The Prompt Methodology is a central aspect of our approach to leveraging generative AI within the hardware design process. We use advanced prompt engineering techniques to facilitate complex reasoning and context-aware responses from the AI models, tailored specifically for digital design tasks.
 
 ### Prompt Engineering
-We utilized the Chain Of Thought (CoT) technique for prompt engineering:
+Digital design is a really complex task that requires complex reasoning and produces context-aware responses. These tasks (like creating an FSM) require multiple intermediate reasoning steps. We utilized generative AI to develop the keyword spotting (KWS) design by employing advanced prompt patterns [(paper: https://doi.org/10.48550/arXiv.2302.11382)](https://doi.org/10.48550/arXiv.2302.11382) and prompt engineering techiques [(paper: https://doi.org/10.48550/arXiv.2402.07927)](https://doi.org/10.48550/arXiv.2402.07927):
 
-Digital design is a really complex task that requires complex reasoning and produces context-aware responses. These tasks (like creating an FSM) require multiple intermediate reasoning steps.
+1. [Chain of thought](https://doi.org/10.48550/arXiv.2201.11903) for context-aware responses
+
+Using chain of thought in prompting large language models (LLMs) helps to generate context-aware responses by breaking down complex tasks into smaller, logical steps. This method ensures coherence and accuracy in the AI's reasoning process.
 
 ![Chain of Thought in Prompt Engineering](/images/prompt_eng.png)
 
+
+2. [Visualization-of-Thought](https://doi.org/10.48550/arXiv.2404.03622) for Spatial Reasoning.
+
+Visualization-of-Thought for spatial reasoning is crucial when prompting LLMs as it aids in understanding and communicating complex spatial relationships and structures. It transforms abstract concepts into concrete visuals, enhancing comprehension and facilitating more effective problem-solving. This is a novel technique used in LLMs in order to facilitate a comprehensive understanding of the relationships and intricacies of data and their connection to multidimensional inputs, weights, and biases, ultimately resulting in enhancing the design's clarity and effectiveness.
+
+![CVisualization-of-Thought](/images/vot.png)
+
+
 ### Prompting Patterns
-To refine the process of interacting with LLMs, we employed two specific prompting patterns: "Recipe" and "Persona."
+To refine the process of interacting with LLMs, we employed two specific prompting patterns [paper:https://doi.org/10.48550/arXiv.2302.11382](https://doi.org/10.48550/arXiv.2302.11382): "Recipe" and "Persona."
 
 **Recipe**: In order to gather the necessary steps to create a hardware trojan using an LLM, we enhanced our prompt engineering techniques by using the Recipe prompt pattern:
 
@@ -43,7 +53,8 @@ The main intent of this process is to gather a sequence of steps with an intent 
 - Structure fundamental contextual statements around key ideas (for example, “Provide code that a digital designer would create”).
 - Provide example code for the LLM to follow along using the Chain of Thought prompt engineering technique (for example, “This part of code ‘X’ from my codebase needs new features.”).
 
-For a deeper understanding of the techniques used, please refer to the paper by J. Wei et al.: “Chain-of-Thought Prompting Elicits Reasoning in Large Language Models,” 2022, doi: [10.48550/ARXIV.2201.11903](https://doi.org/10.48550/ARXIV.2201.11903).
+
+This approach enabled the AI to provide detailed, step-by-step explanations and maintain coherence throughout complex tasks.
 
 [↟Back to Top](#ecko-a-keyword-spotting-accelerator-for-caravel-soc)
 

@@ -16,8 +16,36 @@ Ecko seamlessly integrates with the Caravel System-on-Chip to provide real-time 
 ### Introduction
 Ecko aims to push the boundaries of what's possible with AI accelerators on the Caravel SoC, focusing on minimal power consumption and maximal efficiency for Keyword Spotting applications.
 
-[Back to Top](#ecko-a-keyword-spotting-accelerator-for-caravel-soc)
+[↟Back to Top](#ecko-a-keyword-spotting-accelerator-for-caravel-soc)
 
+
+## Prompt Methodology
+The Prompt Methodology is a central aspect of our approach to leveraging generative AI within the hardware design process. We use advanced prompt engineering techniques to facilitate complex reasoning and context-aware responses from the AI models, tailored specifically for digital design tasks.
+
+### Prompt Engineering
+We utilized the Chain Of Thought (CoT) technique for prompt engineering:
+
+Digital design is a really complex task that requires complex reasoning and produces context-aware responses. These tasks (like creating an FSM) require multiple intermediate reasoning steps.
+
+![Chain of Thought in Prompt Engineering](/images/prompt_eng.png)
+
+### Prompting Patterns
+To refine the process of interacting with LLMs, we employed two specific prompting patterns: "Recipe" and "Persona."
+
+**Recipe**: In order to gather the necessary steps to create a hardware trojan using an LLM, we enhanced our prompt engineering techniques by using the Recipe prompt pattern:
+
+The main intent of this process is to gather a sequence of steps with an intent to create the trojan (for example, “I would like to add ‘X’ feature to my codebase. I need to perform steps A, B, C. Provide a sequence for me and fill in any missing steps.”). Using this pattern, the LLM will analyze a concrete sequence of steps for creating with purpose the trojan (for example, “Identify any unnecessary steps”).
+
+**Persona**: We then used the Persona prompt pattern to:
+
+- Provide the LLM with intent (for example, “Act as a digital engineer”) and conceptualize context (refactor the code, provide Verilog files).
+- Give the LLM motivation to achieve a certain task (for example, “refactor the code to provide extended functionality”).
+- Structure fundamental contextual statements around key ideas (for example, “Provide code that a digital designer would create”).
+- Provide example code for the LLM to follow along using the Chain of Thought prompt engineering technique (for example, “This part of code ‘X’ from my codebase needs new features.”).
+
+For a deeper understanding of the techniques used, please refer to the paper by J. Wei et al.: “Chain-of-Thought Prompting Elicits Reasoning in Large Language Models,” 2022, doi: [10.48550/ARXIV.2201.11903](https://doi.org/10.48550/ARXIV.2201.11903).
+
+[↟Back to Top](#ecko-a-keyword-spotting-accelerator-for-caravel-soc)
 
 ### CNN KWS - Keyword Spotting using Convolutional Neural Networks 
 
@@ -239,7 +267,7 @@ The MFCC (Mel Frequency Cepstral Coefficients) dataflow in the cnn_kws_accel mod
 4. Fully connected layers: One or two fully connected layers to learn high-level representations and perform classification.
 5. Output layer: A softmax layer to produce the probability distribution over the keyword classes.
 
-[Back to Top](#ecko-a-keyword-spotting-accelerator-for-caravel-soc)
+[↟Back to Top](#ecko-a-keyword-spotting-accelerator-for-caravel-soc)
 
 
 ### Mel-frequency Cepstral Coefficients (MFCC)
@@ -271,14 +299,14 @@ Optimizations: Various optimizations are applied at each stage, including the us
 
 
 
-[Back to Top](#ecko-a-keyword-spotting-accelerator-for-caravel-soc)
+[↟Back to Top](#ecko-a-keyword-spotting-accelerator-for-caravel-soc)
 
 ### Features
 - **Efficient Keyword Spotting**: Utilizes a compact, optimized CNN model for fast and accurate speech recognition.
 - **Low Power Consumption**: Designed with energy efficiency in mind, ideal for battery-operated devices.
 - **Seamless Integration**: Fully compatible with the Caravel SoC environment, making it easy to adopt in existing projects.
 
-[Back to Top](#ecko-a-keyword-spotting-accelerator-for-caravel-soc)
+[↟Back to Top](#ecko-a-keyword-spotting-accelerator-for-caravel-soc)
 
 ### Layers
 
@@ -288,7 +316,7 @@ Optimizations: Various optimizations are applied at each stage, including the us
 4. Fully connected layers: One or two fully connected layers to learn high-level representations and perform classification.
 5. Output layer: A softmax layer to produce the probability distribution over the keyword classes.
 
-[Back to Top](#ecko-a-keyword-spotting-accelerator-for-caravel-soc)
+[↟Back to Top](#ecko-a-keyword-spotting-accelerator-for-caravel-soc)
 
 ### Verification
 
@@ -296,7 +324,7 @@ Verification of the Ecko accelerator is a critical step in ensuring its function
 
 Additionally, we can leverage the Caravel SoC's built-in testing and debugging features to monitor the performance of the Ecko accelerator. This includes tracking power consumption, processing speed, and memory usage, which are crucial for assessing the system's efficiency. The results from these tests could help us to fine-tune the design, optimize performance, and ensure seamless integration with the Caravel environment.
 
-[Back to Top](#ecko-a-keyword-spotting-accelerator-for-caravel-soc)
+[↟Back to Top](#ecko-a-keyword-spotting-accelerator-for-caravel-soc)
 
 
 ### License
@@ -305,7 +333,7 @@ Ecko is open source and freely available to the community under the Apache Licen
 
 For more detailed information, please refer to the LICENSE file located in the root directory of this repository.
 
-[Back to Top](#ecko-a-keyword-spotting-accelerator-for-caravel-soc)
+[↟Back to Top](#ecko-a-keyword-spotting-accelerator-for-caravel-soc)
 
 
 [Back to Top](#ecko-a-keyword-spotting-accelerator-for-caravel-soc)

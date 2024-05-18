@@ -18,13 +18,20 @@ Ecko aims to push the boundaries of what's possible with AI accelerators on the 
 
 [Back to Top](#ecko-a-keyword-spotting-accelerator-for-caravel-soc)
 
-### Convolutional Neural Networks (CNNs)
+
+### CNN KWS - Keyword Spotting using Convolutional Neural Networks 
 
 Convolutional Neural Networks (CNNs) are central to the Ecko project, providing the backbone for our efficient and accurate Keyword Spotting (KWS) system. The CNN-KWS model, specifically tailored for KWS tasks, was introduced in the influential paper ["Hello Edge: Keyword Spotting on Microcontrollers"](https://doi.org/10.48550/arXiv.1711.07128) by Zhang et al. (2017). This model has proven to be highly effective in recognizing keywords from audio inputs with minimal computational resources, making it ideal for edge devices like those powered by the Caravel SoC.
 
 The adoption of the CNN-KWS model in Ecko leverages its compact architecture to maximize performance while maintaining low power consumption. This architecture aligns with our project's goals to create a KWS system that not only operates efficiently in real-time on edge devices but also minimizes energy usage and space requirements. The CNN-KWS model's ability to achieve high accuracy with a relatively small footprint makes it the ideal choice for embedding sophisticated AI capabilities directly onto microcontrollers and SoCs, where space and power are at a premium.
 
+## KWS Dataflow 
 
+```
+mfcc_accel-> conv2d_psram (conv1) -> conv2d_psram (conv2) -> fully_connected_psram (fc1) -> fully_connected_psram (fc2) -maxpool2d_sram -> softmax_psram
+```
+
+The dataflow in the cnn_kws_accel module begins in the IDLE state, waiting for a start signal. Once triggered, it transitions to the MFCC (Mel Frequency Cepstral Coefficients) extraction stage, where audio features are computed. The data then flows to the first convolutional layer (conv2d_psram (conv1)) for initial feature extraction, followed by a second convolutional layer (conv2d_psram (conv2)) for further processing. The output is passed to the first fully connected layer (fully_connected_psram (fc1)) to integrate the features, then to a second fully connected layer (fully_connected_psram (fc2)) for deeper integration. Subsequently, the data is processed by the max pooling layer (maxpool2d_sram) to downsample the features and reduce dimensionality. Finally, the data reaches the softmax layer (softmax_psram), where probabilities are computed for classification. The completion of this stage indicates the end of the processing sequence.
 
 #### Advantages
 

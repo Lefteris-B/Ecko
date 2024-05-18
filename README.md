@@ -3,14 +3,32 @@
 Ecko *(greek ἠχώ)* is an open-source hardware accelerator designed specifically for efficient and accurate Keyword Spotting (KWS) on edge devices. Leveraging the power of the "Hello Edge" CNN model and optimized for the caravel platform.
 Ecko seamlessly integrates with the Caravel System-on-Chip to provide real-time speech recognition capabilities.
 
+
 ## Table of Contents
 - [Introduction](#introduction)
-- [Convolutional Neural Networks (CNNs)](#convolutional-neural-networks-cnn)
-- [Mel-frequency Cepstral Coefficients (MFCC)](#mel-frequency-cepstral-coefficients-mfcc)
+- [Prompt Methodology](#prompt-methodology)
+  - [Prompt Engineering](#prompt-engineering)
+  - [Prompting Patterns](#prompting-patterns)
+- [CNN KWS - Keyword Spotting using Convolutional Neural Networks](#cnn-kws---keyword-spotting-using-convolutional-neural-networks)
+  - [Architecture Optimizations](#architecture-optimizations)
+  - [Number Representation](#number-representation)
+  - [Dataflows in AI Accelerators](#dataflows-in-ai-accelerators)
+  - [Look Up Tables (LUTs)](#look-up-tables-luts)
+  - [Dimensions](#dimensions)
+  - [Pipelining](#pipelining)
+  - [Quantization](#quantization)
+  - [Pruning](#pruning)
+- [Mel-frequency Cepstral Coefficients (MFCC) Implementation](#mel-frequency-cepstral-coefficients-mfcc-implementation)
+  - [MFCC Implementation Computational Optimizations](#mfcc-implementation-computational-optimizations)
+  - [MFCC Pipeline](#mfcc-pipeline)
+- [KWS Dataflow](#kws-dataflow)
+- [KWS RAM Address Map](#kws-ram-address-map)
+- [The MFCC](#the-mfcc)
 - [Features](#features)
 - [Layers](#layers)
 - [Verification](#verification)
 - [License](#license)
+
 
 
 ### Introduction
@@ -62,7 +80,7 @@ These approaches enabled the LLMs to provide detailed, step-by-step explanations
 
 Convolutional Neural Networks (CNNs) are central to the Ecko project, providing the backbone for our efficient and accurate Keyword Spotting (KWS) system. The CNN-KWS model, specifically tailored for KWS tasks, was introduced in the influential paper ["Hello Edge: Keyword Spotting on Microcontrollers"](https://doi.org/10.48550/arXiv.1711.07128) by Zhang et al. (2017). This model has proven to be highly effective in recognizing keywords from audio inputs with minimal computational resources, making it ideal for edge devices like those powered by the Caravel SoC.
 
-We used the paper ["Integer-Only Approximated MFCC for Ultra-Low Power Audio NN Processing on Multi-Core MCUs" with LP16 to develop the MFCC -https://doi.org/10.1109/AICAS51828.2021.9458491](https://doi.org/10.1109/AICAS51828.2021.9458491), as it provides a methodology for implementing efficient MFCC extraction using integer arithmetic. This approach is well-suited for ultra-low power audio processing on resource-constrained devices, ensuring energy efficiency and performance optimization.
+We used the paper ["Integer-Only Approximated MFCC for Ultra-Low Power Audio NN Processing on Multi-Core MCUs" - https://doi.org/10.1109/AICAS51828.2021.9458491](https://doi.org/10.1109/AICAS51828.2021.9458491) with LP16 to develop the MFCC, as it provides a methodology for implementing efficient MFCC extraction using integer arithmetic. This approach is well-suited for ultra-low power audio processing on resource-constrained devices, ensuring energy efficiency and performance optimization.
 
 The adoption of these models in Ecko leverages its compact architecture to maximize performance while maintaining low power consumption. This architecture aligns with our project's goals to create a KWS system that not only operates efficiently in real-time on edge devices but also minimizes energy usage and space requirements. The CNN-KWS model's ability to achieve high accuracy with a relatively small footprint makes it the ideal choice for embedding sophisticated AI capabilities directly onto microcontrollers and SoCs, where space and power are at a premium.
 
@@ -85,7 +103,18 @@ Dataflows in AI accelerators define how data moves through various processing el
 #### Why We Used "Weight Stationary" Dataflow
 We used the "Weight Stationary" dataflow in our design to maximize the reuse of weights by keeping them stationary in the local memory of processing elements. This approach minimizes the costly data movement of weights, reduces memory access latency, and optimizes power efficiency, making it ideal for our resource-constrained, low-power AI accelerator.
 
-![Dataflow Optimizations in Gemmini](/images/dataflow.png)
+![Dataflow Optimizations ](/images/dataflow.png)
+
+### Look Up Tables (LUTs)
+
+Usage of LUTs for Computational Optimizations in Our Modules
+In our modules, Look-Up Tables (LUTs) are employed to enhance computational efficiency by precomputing and storing frequently used values. This approach eliminates the need for repeated complex calculations, significantly speeding up operations. For instance, in the logarithm module, LUTs store precomputed values of 
+log
+⁡
+(
+2
+)
+log(2) and other constants, enabling rapid access during runtime. Similarly, in the Mel filter and windowing operations, LUTs provide precomputed filter coefficients and window functions, facilitating quick dot product computations and windowing processes. By leveraging LUTs, we reduce the computational burden, lower power consumption, and achieve real-time performance in our signal processing tasks. Notably, all LUT results were calculated using Python scripts generated by large language models (LLMs) and are included in the /scripts folder of our repository.
 
 ### Dimensions
 The dimensions of the hardware and software components significantly influence the system's overall capabilities. The size of the hardware components, such as memory size, directly correlates with the computational power and throughput. Complexity arises from the integration of multiple components and the need for precise timing and control logic. Scalability is a key design feature, allowing the system to adapt to different KWS models and workloads, ensuring that our accelerator can meet both current and future demands without requiring complete redesigns.
@@ -99,12 +128,179 @@ We implemented integer-only quantization, reducing the precision of weights and 
 ### Pruning
 Our design involved pruning less significant weights and neurons from the neural network, resulting in a smaller and more efficient model. This optimization reduced the model size and sped up inference without compromising accuracy.
 
+
 ### Mel-frequency Cepstral Coefficients (MFCC) implementation
 
-Audio Features Extractor
-This repository contains an implementation of an audio features extractor, focusing on efficiency and low power consumption. The project is inspired by the paper "Integer-Only Approximated MFCC for Ultra-Low Power Audio NN Processing on Multi-Core MCUs". The implementation utilizes a Verilog-based approach and incorporates various optimizations for resource-constrained environments.
+[Mel Frequency Cepstral Coefficients (MFCC) - (https://doi.org/10.1016/B978-0-323-91776-6.00016-6)](https://doi.org/10.1016/B978-0-323-91776-6.00016-6) are features used in audio processing, particularly in speech and audio recognition tasks. MFCCs represent the short-term power spectrum of a sound signal, using a nonlinear Mel scale to approximate human ear perception. The process involves transforming the audio signal into the frequency domain using the Fast Fourier Transform (FFT), applying a Mel filter bank to emphasize perceptually important frequencies, taking the logarithm to compress the dynamic range, and finally applying the Discrete Cosine Transform (DCT) to decorrelate the features, producing a compact representation that captures the essential characteristics of the audio signal.
+Bellow is a visual representation of the mfcc module using a **SysML** BDD diagram.
 
-Methodology
+```
+audio_sample 
+    |
+    v
++------------------------------+
+|   Pre-Emphasis               |
+| Input: audio_sample          |
+| Output: pre_emphasized_sample|
++------------------------------+
+    |
+    v
++------------------------------------------------------------------------------+
+|      Framing                                                                 |
+| Input: pre_emphasized_sample                                                 |
+| Output: frames                                                               |
+| Params: frame_length, frame_step                                             |
+| Calculation: frames = frame(pre_emphasized_sample, frame_length, frame_step) |
++------------------------------------------------------------------------------+
+    |
+    v
++----------------------------------------------------------------+
+|     Windowing                                                  |
+| Input: frames                                                  |
+| Output: windowed_frames                                        |
+| Params: window_function                                        |
+| Calculation: windowed_frames = window(frames, window_function) |
++----------------------------------------------------------------+
+    |
+    v
++--------------------------------------------------------+
+|       FFT                                              |
+| Input: windowed_frames                                 |
+| Output: magnitude_spectrum                             |
+| Calculation: magnitude_spectrum = fft(windowed_frames) |
++--------------------------------------------------------+
+    |
+    v
++-----------------------------------------------------------------------------+
+|   Mel Filter Bank                                                           |
+| Input: magnitude_spectrum                                                   |
+| Output: mel_spectrum                                                        |
+| Params: num_mel_filters                                                     |
+| Calculation: mel_spectrum = mel_filter(magnitude_spectrum, num_mel_filters) |
++-----------------------------------------------------------------------------+
+    |
+    v
++---------------------------------------------------+
+|     Logarithm                                     |
+| Input: mel_spectrum                               |
+| Output: log_mel_spectrum                          |
+| Calculation: log_mel_spectrum = log(mel_spectrum) |
++---------------------------------------------------+
+    |
+    v
++---------------------------------------------------------------------------+
+|       DCT                                                                 |
+| Input: log_mel_spectrum                                                   |
+| Output: mfcc_features                                                     |
+| Params: num_mfcc_coefficients                                             |
+| Calculation: mfcc_features = dct(log_mel_spectrum, num_mfcc_coefficients) |
++---------------------------------------------------------------------------+
+    |
+    v
+mfcc_features
+
+```
+The MFCC pipeline processes audio samples by first applying pre-emphasis to amplify high frequencies, then segmenting the signal into overlapping frames. Each frame is windowed to reduce spectral leakage before performing an FFT to obtain the magnitude spectrum. The spectrum is then filtered using a Mel filter bank, followed by logarithmic scaling, and finally, a Discrete Cosine Transform (DCT) is applied to produce the MFCC features. This pipeline efficiently extracts critical audio features for further processing in the KWS application.
+
+![mfcc pipeline ](/images/mfcc.png)
+
+### MFCC Implementation Computational Optimizations
+
+1. Framing Filter
+- In the framing module, computational efficiency is achieved by using fixed-point arithmetic to handle overlapping frames, minimizing the computational overhead compared to floating-point operations. The Hanning window module applies a precomputed window function to each frame, utilizing efficient memory access patterns and minimizing redundant calculations. Window functions are applied to each frame of the signal to mitigate spectral leakage, which can distort the frequency representation. 
+- The Hanning window is commonly used for this purpose due to its smooth tapering characteristics that reduce the amplitude of the discontinuities at the boundaries of each frame. This window effectively minimizes side lobes in the periodogram, resulting in a cleaner and more accurate power spectral density estimate. By applying the Hanning window, we ensure that the computed periodogram faithfully represents the signal's frequency components, crucial for accurate audio feature extraction.
+By leveraging symmetry properties of the Hanning window and using integer-only operations, the overall computational load is reduced, enhancing performance and power efficiency in resource-constrained environments. These optimizations ensure real-time processing capabilities essential for audio applications.
+
+2. FFT
+- In our FFT modules, computational optimizations were achieved by using the squared module of complex values, known as the periodogram, to calculate the power spectrum. This approach avoids the highly expensive square root function required in traditional complex module computations. By focusing on the squared values, we significantly reduced the computational complexity and improved the efficiency of the FFT process, making it more suitable for real-time audio processing on low-power devices. 
+- This optimization ensures faster execution while maintaining the accuracy needed for subsequent audio feature extraction steps. By applying shift operations prior to the the sum, the two additions and two multiplications that make up the Radix-2 FFT's basic computation match the scaling factors of the fixed-point operands. Multiplying and shifting the fixed point values and the int16 twiddles (fixed-point Q15) yields the FFT products. 
+
+3. MEL Filters
+- In the Mel filter module, we optimized computations by leveraging the dot product between the periodogram power spectrum and a set of precomputed triangular filter banks. This approach efficiently aggregates spectral energy into Mel frequency bands by performing simple multiplications and additions, eliminating the need for more complex operations. 
+- By using integer arithmetic for these dot products, we further reduce computational overhead, ensuring faster processing and lower power consumption. These optimizations make the Mel filtering step both efficient and effective for real-time audio feature extraction on resource-constrained hardware.
+In order to calculate the Mel energies, we perform a dot-product operation between the int32 data, specifically the Periodogram, and the non-zero elements of the sparse Mel filter banks. In order to minimize memory use, we keep only the initial and final indices of the non-zero items in the triangle filters.
+
+4. Logarithm calculation
+- In the logarithm module for fixed-point data, we exploit the intrinsic properties of the logarithm operator to optimize computations. The logarithm of each value is computed as 
+log
+⁡
+(
+𝑥
+[
+𝑖
+]
+)
+=
+log
+⁡
+(
+𝑋
+[
+𝑖
+]
+⋅
+2
+−
+𝑄
+[
+𝑖
+]
+)
+=
+log
+⁡
+(
+𝑋
+[
+𝑖
+]
+)
+−
+𝑄
+[
+𝑖
+]
+⋅
+log
+⁡
+(
+2
+)
+log(x[i])=log(X[i]⋅2 
+−Q[i]
+ )=log(X[i])−Q[i]⋅log(2), where 
+log
+⁡
+(
+2
+)
+log(2) is stored as a fixed-point constant. The term 
+log
+⁡
+(
+𝑋
+[
+𝑖
+]
+)
+log(X[i]) is approximated using a 3rd order Taylor series, relying solely on integer operations. This approach ensures efficient computation without floating-point arithmetic. The resulting fixed-point int16 elements produced by the logarithm operator share a consistent scaling factor 
+𝑄
+Q. Subsequently, the DCT operation involves a dot product between the log outputs and the int16 DCT coefficient matrix in Q15 format. Through empirical analysis, we found that using a Q11 format for the log outputs and a Q4 format for the DCT outputs provides an optimal balance between dynamic range and precision for real-valued numbers, enhancing the overall efficiency and accuracy of the processing pipeline.
+
+5. Usage of LUTs for Computational Optimizations in Our Modules.
+- In our modules, Look-Up Tables (LUTs) are employed to enhance computational efficiency by precomputing and storing frequently used values. This approach eliminates the need for repeated complex calculations, **significantly** speeding up operations. For instance, in the logarithm module, LUTs store precomputed values of 
+log
+⁡
+(
+2
+)
+log(2) and other constants, enabling rapid access during runtime. Similarly, in the Mel filter and windowing operations, LUTs provide precomputed filter coefficients and window functions, facilitating quick dot product computations and windowing processes. By leveraging LUTs, we reduce the computational burden, lower power consumption, and achieve real-time performance in our signal processing tasks.
+- Notably, all LUT results were calculated using Python scripts generated by large language models (LLMs) and are included in the /scripts folder of our repository.
+
+### MFCC Pipeline
+
+The implementation utilizes a Verilog-based approach and incorporates various optimizations for resource-constrained environments.
+
 The implementation follows an optimized processing pipeline, incorporating the following steps:
 
 1. Hamming Windowing: The input audio samples are processed using the Hamming window function to reduce spectral leakage and improve frequency estimation accuracy.
@@ -383,6 +579,4 @@ For more detailed information, please refer to the LICENSE file located in the r
 
 [↟Back to Top](#ecko-a-keyword-spotting-accelerator-for-caravel-soc)
 
-
-[Back to Top](#ecko-a-keyword-spotting-accelerator-for-caravel-soc)
 

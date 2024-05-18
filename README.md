@@ -23,16 +23,24 @@ Ecko seamlessly integrates with the Caravel System-on-Chip to provide real-time 
   - [MFCC Pipeline](#mfcc-pipeline)
 - [KWS Dataflow](#kws-dataflow)
 - [KWS RAM Address Map](#kws-ram-address-map)
-- [The MFCC](#the-mfcc)
-- [Features](#features)
-- [Layers](#layers)
+- [CNN-KWS Model Architecture](#cnn-kws-model-architecture)
+- [Advantages](#advantages)
+- [Testing](#testing)
 - [Verification](#verification)
 - [License](#license)
+- [Efabless Repository and Files](#efabless-repository-and-files)
 
 
 
-### Introduction
+## Introduction
 Ecko aims to push the boundaries of what's possible with AI accelerators on the Caravel SoC, focusing on minimal power consumption and maximal efficiency for Keyword Spotting applications.
+
+### Features
+- **Efficient Keyword Spotting**: Utilizes a compact, optimized CNN model for fast and accurate speech recognition.
+- **Low Power Consumption**: Designed with energy efficiency in mind, ideal for battery-operated devices.
+- **Seamless Integration**: Fully compatible with the Caravel SoC environment, making it easy to adopt in existing projects.
+- **Parameterizable**: The project is designed to be highly parameterizable, allowing for easy adjustment of key parameters such as frame size, fixed-point precision, and zero-padding size, enabling flexible adaptation to various application requirements and resource constraints.
+
 
 [↟Back to Top](#ecko-a-keyword-spotting-accelerator-for-caravel-soc)
 
@@ -76,7 +84,7 @@ These approaches enabled the LLMs to provide detailed, step-by-step explanations
 
 [↟Back to Top](#ecko-a-keyword-spotting-accelerator-for-caravel-soc)
 
-### CNN KWS - Keyword Spotting using Convolutional Neural Networks 
+## CNN KWS - Keyword Spotting using Convolutional Neural Networks 
 
 Convolutional Neural Networks (CNNs) are central to the Ecko project, providing the backbone for our efficient and accurate Keyword Spotting (KWS) system. The CNN-KWS model, specifically tailored for KWS tasks, was introduced in the influential paper ["Hello Edge: Keyword Spotting on Microcontrollers"](https://doi.org/10.48550/arXiv.1711.07128) by Zhang et al. (2017). This model has proven to be highly effective in recognizing keywords from audio inputs with minimal computational resources, making it ideal for edge devices like those powered by the Caravel SoC.
 
@@ -128,8 +136,9 @@ We implemented integer-only quantization, reducing the precision of weights and 
 ### Pruning
 Our design involved pruning less significant weights and neurons from the neural network, resulting in a smaller and more efficient model. This optimization reduced the model size and sped up inference without compromising accuracy.
 
+[↟Back to Top](#ecko-a-keyword-spotting-accelerator-for-caravel-soc)
 
-### Mel-frequency Cepstral Coefficients (MFCC) implementation
+## Mel-frequency Cepstral Coefficients (MFCC) implementation
 
 [Mel Frequency Cepstral Coefficients (MFCC) - (https://doi.org/10.1016/B978-0-323-91776-6.00016-6)](https://doi.org/10.1016/B978-0-323-91776-6.00016-6) are features used in audio processing, particularly in speech and audio recognition tasks. MFCCs represent the short-term power spectrum of a sound signal, using a nonlinear Mel scale to approximate human ear perception. The process involves transforming the audio signal into the frequency domain using the Fast Fourier Transform (FFT), applying a Mel filter bank to emphasize perceptually important frequencies, taking the logarithm to compress the dynamic range, and finally applying the Discrete Cosine Transform (DCT) to decorrelate the features, producing a compact representation that captures the essential characteristics of the audio signal.
 Bellow is a visual representation of the mfcc module using a **SysML** BDD diagram.
@@ -299,6 +308,16 @@ log(2) and other constants, enabling rapid access during runtime. Similarly, in 
 
 ### MFCC Pipeline
 
+
+```
++------------+    +-------------+    +---------+    +---------+    +--------+    +--------+    +----------+    
+|  Hanning   | -> | Periodogram | -> |   Pow   | -> |   Log   | -> |  Mel   | -> |  DCT   | -> | MFCC_out |
+|  Windowing |    +-------------+    +---------+    +---------+    +--------+    +--------+    +----------+    
++------------+
+```
+
+The MFCC (Mel Frequency Cepstral Coefficients) dataflow in the cnn_kws_accel module starts with the audio_sample input, which is fed into the mfcc_accel module. The mfcc_accel module processes the raw audio signal to extract MFCC features, which are a compact representation of the power spectrum of the audio signal. This is achieved by applying a series of transformations: pre-emphasis, framing, windowing, fast Fourier transform (FFT), Mel filter bank processing, and discrete cosine transform (DCT). The resulting mfcc_feature output is a set of coefficients that capture the essential characteristics of the audio signal, making it suitable for further processing in the subsequent stages of the CNN-based keyword spotting accelerator.
+
 The implementation utilizes a Verilog-based approach and incorporates various optimizations for resource-constrained environments.
 
 The implementation follows an optimized processing pipeline, incorporating the following steps:
@@ -326,7 +345,12 @@ Optimizations: Various optimizations are applied at each stage, including the us
 
 [↟Back to Top](#ecko-a-keyword-spotting-accelerator-for-caravel-soc)
 
-## KWS Dataflow 
+
+## Keyword Spoting 
+
+
+
+### KWS Dataflow 
 
 ```
 mfcc_accel-> conv2d_psram (conv1) -> conv2d_psram (conv2) -> fully_connected_psram (fc1) -> fully_connected_psram (fc2) -maxpool2d_sram -> softmax_psram
@@ -334,7 +358,7 @@ mfcc_accel-> conv2d_psram (conv1) -> conv2d_psram (conv2) -> fully_connected_psr
 
 The dataflow in the cnn_kws_accel module begins in the IDLE state, waiting for a start signal. Once triggered, it transitions to the MFCC (Mel Frequency Cepstral Coefficients) extraction stage, where audio features are computed. The data then flows to the first convolutional layer (conv2d_psram (conv1)) for initial feature extraction, followed by a second convolutional layer (conv2d_psram (conv2)) for further processing. The output is passed to the first fully connected layer (fully_connected_psram (fc1)) to integrate the features, then to a second fully connected layer (fully_connected_psram (fc2)) for deeper integration. Subsequently, the data is processed by the max pooling layer (maxpool2d_sram) to downsample the features and reduce dimensionality. Finally, the data reaches the softmax layer (softmax_psram), where probabilities are computed for classification. The completion of this stage indicates the end of the processing sequence.
 
-## KWS RAM address map
+### KWS RAM address map
 
 In the our imlementation, pseudo-static RAM (PSRAM) plays a crucial role in managing the temporary storage and retrieval of intermediate data between various processing stages. During the execution of convolutional layers, fully connected layers, and other operations, large amounts of data are generated and need to be efficiently stored and accessed. PSRAM provides a high-density, cost-effective memory solution that balances the speed of SRAM with the density of DRAM, making it suitable for embedded applications like keyword spotting (KWS). By leveraging PSRAM, the accelerator can handle the memory demands of complex neural network computations without incurring the higher costs and power consumption associated with traditional memory solutions, thereby enabling real-time processing and improving overall system performance.
 
@@ -368,6 +392,14 @@ This address map helps visualize how the different weights, biases, and data for
 organized in memory. Each module's base address is separated by 0x100 to ensure no overlap and 
 allow easy access to the data stored for each layer. 
 
+
+### CNN-KWS model architecture
+
+1. Input: Mel-frequency cepstral coefficients (MFCC) features extracted from the audio signal.
+2. Convolutional layers: Two or three convolutional layers with small kernel sizes (e.g., 3x3) and a small number of filters (e.g., 32 or 64) to learn local patterns in the MFCC features.
+3. Pooling layers: Max pooling layers to reduce the spatial dimensions and provide translation invariance.
+4. Fully connected layers: One or two fully connected layers to learn high-level representations and perform classification.
+5. Output layer: A softmax layer to produce the probability distribution over the keyword classes.
 
 **Topdown visualization using SysML BDD Diagram**
 ```
@@ -513,16 +545,7 @@ softmax_data_out
 ```
 
 
-
-
-## The MFCC
-```
-audio_sample -> mfcc_accel -> mfcc_feature
-```
-
-The MFCC (Mel Frequency Cepstral Coefficients) dataflow in the cnn_kws_accel module starts with the audio_sample input, which is fed into the mfcc_accel module. The mfcc_accel module processes the raw audio signal to extract MFCC features, which are a compact representation of the power spectrum of the audio signal. This is achieved by applying a series of transformations: pre-emphasis, framing, windowing, fast Fourier transform (FFT), Mel filter bank processing, and discrete cosine transform (DCT). The resulting mfcc_feature output is a set of coefficients that capture the essential characteristics of the audio signal, making it suitable for further processing in the subsequent stages of the CNN-based keyword spotting accelerator.
-
-#### Advantages
+### Advantages
 
 1. Compact architecture: The model consists of a few convolutional layers followed by fully connected layers, making it relatively lightweight and suitable for resource-constrained hardware.
 
@@ -532,51 +555,28 @@ The MFCC (Mel Frequency Cepstral Coefficients) dataflow in the cnn_kws_accel mod
 
 4. Energy efficiency: The compact size and hardware-friendly architecture of the CNN-KWS model make it energy-efficient, which is crucial for battery-powered devices and edge computing scenarios.
 
-#### CNN-KWS model architecture
+[↟Back to Top](#ecko-a-keyword-spotting-accelerator-for-caravel-soc)
 
-1. Input: Mel-frequency cepstral coefficients (MFCC) features extracted from the audio signal.
-2. Convolutional layers: Two or three convolutional layers with small kernel sizes (e.g., 3x3) and a small number of filters (e.g., 32 or 64) to learn local patterns in the MFCC features.
-3. Pooling layers: Max pooling layers to reduce the spatial dimensions and provide translation invariance.
-4. Fully connected layers: One or two fully connected layers to learn high-level representations and perform classification.
-5. Output layer: A softmax layer to produce the probability distribution over the keyword classes.
+## Testing
+Each model was tested using SystemVerilog assertions. That involves writing testbenches that not only apply test cases but also include assertions to verify that the modules behave as expected. 
+
+[↟Back to Top](#ecko-a-keyword-spotting-accelerator-for-caravel-soc)
+
+## Verification
+Formal verification is a powerful technique that uses mathematical methods to prove the correctness of a design. We verified the KWS accelerator pipeline using the SymbiYosys (sby) front-end and the Yosys open synthesis suite.
 
 [↟Back to Top](#ecko-a-keyword-spotting-accelerator-for-caravel-soc)
 
 
-
-
-### Features
-- **Efficient Keyword Spotting**: Utilizes a compact, optimized CNN model for fast and accurate speech recognition.
-- **Low Power Consumption**: Designed with energy efficiency in mind, ideal for battery-operated devices.
-- **Seamless Integration**: Fully compatible with the Caravel SoC environment, making it easy to adopt in existing projects.
-
-[↟Back to Top](#ecko-a-keyword-spotting-accelerator-for-caravel-soc)
-
-### Layers
-
-1. Input: Mel-frequency cepstral coefficients (MFCC) features extracted from the audio signal.
-2. Convolutional layers: Two or three convolutional layers with small kernel sizes (e.g., 3x3) and a small number of filters (e.g., 32 or 64) to learn local patterns in the MFCC features.
-3. Pooling layers: Max pooling layers to reduce the spatial dimensions and provide translation invariance.
-4. Fully connected layers: One or two fully connected layers to learn high-level representations and perform classification.
-5. Output layer: A softmax layer to produce the probability distribution over the keyword classes.
-
-[↟Back to Top](#ecko-a-keyword-spotting-accelerator-for-caravel-soc)
-
-### Verification
-
-Verification of the Ecko accelerator is a critical step in ensuring its functionality, performance, and compatibility with the Caravel SoC. We employ a rigorous verification strategy that includes both simulation and hardware-based testing. Initially, the design is verified through extensive simulation using standard EDA tools to simulate the CNN-KWS model's behavior and to ensure that it meets the predefined specifications for accuracy and performance.
-
-Additionally, we can leverage the Caravel SoC's built-in testing and debugging features to monitor the performance of the Ecko accelerator. This includes tracking power consumption, processing speed, and memory usage, which are crucial for assessing the system's efficiency. The results from these tests could help us to fine-tune the design, optimize performance, and ensure seamless integration with the Caravel environment.
-
-[↟Back to Top](#ecko-a-keyword-spotting-accelerator-for-caravel-soc)
-
-
-### License
+## License
 
 Ecko is open source and freely available to the community under the Apache License 2.0. This licensing choice supports our commitment to open innovation and collaboration. 
 
 For more detailed information, please refer to the LICENSE file located in the root directory of this repository.
 
 [↟Back to Top](#ecko-a-keyword-spotting-accelerator-for-caravel-soc)
+
+## Efabless repo\GDS files\lef-def-spef files
+[https://github.com/Lefteris-B/ecko_efabless](https://github.com/Lefteris-B/ecko_efabless)
 
 

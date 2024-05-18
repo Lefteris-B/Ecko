@@ -62,7 +62,73 @@ These approaches enabled the LLMs to provide detailed, step-by-step explanations
 
 Convolutional Neural Networks (CNNs) are central to the Ecko project, providing the backbone for our efficient and accurate Keyword Spotting (KWS) system. The CNN-KWS model, specifically tailored for KWS tasks, was introduced in the influential paper ["Hello Edge: Keyword Spotting on Microcontrollers"](https://doi.org/10.48550/arXiv.1711.07128) by Zhang et al. (2017). This model has proven to be highly effective in recognizing keywords from audio inputs with minimal computational resources, making it ideal for edge devices like those powered by the Caravel SoC.
 
-The adoption of the CNN-KWS model in Ecko leverages its compact architecture to maximize performance while maintaining low power consumption. This architecture aligns with our project's goals to create a KWS system that not only operates efficiently in real-time on edge devices but also minimizes energy usage and space requirements. The CNN-KWS model's ability to achieve high accuracy with a relatively small footprint makes it the ideal choice for embedding sophisticated AI capabilities directly onto microcontrollers and SoCs, where space and power are at a premium.
+We used the paper ["Integer-Only Approximated MFCC for Ultra-Low Power Audio NN Processing on Multi-Core MCUs" with LP16 to develop the MFCC -https://doi.org/10.1109/AICAS51828.2021.9458491](https://doi.org/10.1109/AICAS51828.2021.9458491), as it provides a methodology for implementing efficient MFCC extraction using integer arithmetic. This approach is well-suited for ultra-low power audio processing on resource-constrained devices, ensuring energy efficiency and performance optimization.
+
+The adoption of these models in Ecko leverages its compact architecture to maximize performance while maintaining low power consumption. This architecture aligns with our project's goals to create a KWS system that not only operates efficiently in real-time on edge devices but also minimizes energy usage and space requirements. The CNN-KWS model's ability to achieve high accuracy with a relatively small footprint makes it the ideal choice for embedding sophisticated AI capabilities directly onto microcontrollers and SoCs, where space and power are at a premium.
+
+### Architecture optimizations 
+
+### Number Representation 
+Choosing the appropriate number representation is pivotal in influencing the accuracy, area, and energy cost of hardware accelerators. Common number systems include integers, floats, and brain floats (bfloats). Integers are typically used for quantized models, offering lower energy cost and area but at a potential loss of accuracy. Floats, including the standard IEEE 754 and bfloat16, provide a wider dynamic range, which is beneficial for maintaining the precision of calculations. Bfloats are a compromise, providing enough precision for deep learning while reducing complexity. The selection of number representation is a critical design decision that impacts the trade-offs between accuracy, computational area, and energy efficiency.
+
+
+![Number Representation Impact](/images/number_representation.png)
+
+![Energy Cost of Different Number Representations](/images/number_energy_cost.png)
+
+We chose integers as the number representation in our design to enhance computational efficiency and reduce power consumption. Integer arithmetic is less demanding on hardware resources compared to floating-point operations, making it ideal for ultra-low power and real-time processing applications on resource-constrained devices.
+
+
+### Dataflows in AI Accelerators
+Dataflows in AI accelerators define how data moves through various processing elements, influencing the efficiency and performance of neural network computations. Common dataflows include weight stationary, output stationary, and row stationary, each optimizing different aspects of memory and computation by strategically managing the reuse of weights, activations, or partial sums.
+
+#### Why We Used "Weight Stationary" Dataflow
+We used the "Weight Stationary" dataflow in our design to maximize the reuse of weights by keeping them stationary in the local memory of processing elements. This approach minimizes the costly data movement of weights, reduces memory access latency, and optimizes power efficiency, making it ideal for our resource-constrained, low-power AI accelerator.
+
+![Dataflow Optimizations in Gemmini](/images/dataflow.png)
+
+### Dimensions
+The dimensions of the hardware and software components significantly influence the system's overall capabilities. The size of the hardware components, such as memory size, directly correlates with the computational power and throughput. Complexity arises from the integration of multiple components and the need for precise timing and control logic. Scalability is a key design feature, allowing the system to adapt to different KWS models and workloads, ensuring that our accelerator can meet both current and future demands without requiring complete redesigns.
+
+### Pipelining
+Pipelining is a crucial feature that enhances the execution of matrix multiplication operations, a common task in deep learning models. By effectively using pipelining, we can overlap the execution of multiple instructions, which helps to utilize the hardware more efficiently and increase the throughput. Specifically, we leveraged external memories by using a pseudo-ram interface that holds the same data across different pipeline stages to improve energy consumption. This approach reduces the need for repeated memory accesses for the same data, thus saving power,time and space. Pipelining is particularly effective in deep neural network computations where such data reusability is common. 
+
+### Quantization
+We implemented integer-only quantization, reducing the precision of weights and activations to int8. This optimization significantly lowered memory usage and enhanced computational speed, fitting our low-power design requirements.
+
+### Pruning
+Our design involved pruning less significant weights and neurons from the neural network, resulting in a smaller and more efficient model. This optimization reduced the model size and sped up inference without compromising accuracy.
+
+### Mel-frequency Cepstral Coefficients (MFCC) implementation
+
+Audio Features Extractor
+This repository contains an implementation of an audio features extractor, focusing on efficiency and low power consumption. The project is inspired by the paper "Integer-Only Approximated MFCC for Ultra-Low Power Audio NN Processing on Multi-Core MCUs". The implementation utilizes a Verilog-based approach and incorporates various optimizations for resource-constrained environments.
+
+Methodology
+The implementation follows an optimized processing pipeline, incorporating the following steps:
+
+1. Hamming Windowing: The input audio samples are processed using the Hamming window function to reduce spectral leakage and improve frequency estimation accuracy.
+
+2. Periodogram Calculation: Instead of using the traditional Fast Fourier Transform (FFT), a Periodogram module is employed to compute the squared magnitude of complex values. This avoids the expensive square root operation and reduces computational complexity.
+
+3. Power Computation: A power module is introduced after the Periodogram stage to compute the power of the signal. This involves appropriate scaling to prevent overflow and maintain accuracy.
+
+4. Mel Filtering: Mel filtering is implemented as a sparse matrix multiply operation, with Mel filter coefficients stored in ROM. This step is crucial for capturing human auditory perception characteristics.
+
+5. Logarithmic Compression: A logarithmic operation is applied to the output of the Mel filtering stage to compress the dynamic range of the features.
+
+6. Discrete Cosine Transform (DCT): Finally, a fixed-point INT16 DCT is performed to transform the logarithmic features into a compact representation suitable for further processing or analysis.
+Implementation Details
+
+Top-Level Module: The Verilog implementation includes a top-level module with INT16 input and output ports for audio samples and MFCC features, respectively. Control signals are provided to manage the processing stages.
+
+Sub-Modules: Each processing stage is instantiated as a sub-module within the top-level design. These modules are designed to efficiently handle the specified operations while maintaining low resource utilization.
+
+Optimizations: Various optimizations are applied at each stage, including the use of fixed-point arithmetic, lookup tables, and ROM storage for coefficients and intermediate results.
+
+
+
+[↟Back to Top](#ecko-a-keyword-spotting-accelerator-for-caravel-soc)
 
 ## KWS Dataflow 
 
@@ -281,36 +347,7 @@ The MFCC (Mel Frequency Cepstral Coefficients) dataflow in the cnn_kws_accel mod
 [↟Back to Top](#ecko-a-keyword-spotting-accelerator-for-caravel-soc)
 
 
-### Mel-frequency Cepstral Coefficients (MFCC)
 
-Audio Features Extractor
-This repository contains an implementation of an audio features extractor, focusing on efficiency and low power consumption. The project is inspired by the paper "Integer-Only Approximated MFCC for Ultra-Low Power Audio NN Processing on Multi-Core MCUs". The implementation utilizes a Verilog-based approach and incorporates various optimizations for resource-constrained environments.
-
-Methodology
-The implementation follows an optimized processing pipeline, incorporating the following steps:
-
-1. Hamming Windowing: The input audio samples are processed using the Hamming window function to reduce spectral leakage and improve frequency estimation accuracy.
-
-2. Periodogram Calculation: Instead of using the traditional Fast Fourier Transform (FFT), a Periodogram module is employed to compute the squared magnitude of complex values. This avoids the expensive square root operation and reduces computational complexity.
-
-3. Power Computation: A power module is introduced after the Periodogram stage to compute the power of the signal. This involves appropriate scaling to prevent overflow and maintain accuracy.
-
-4. Mel Filtering: Mel filtering is implemented as a sparse matrix multiply operation, with Mel filter coefficients stored in ROM. This step is crucial for capturing human auditory perception characteristics.
-
-5. Logarithmic Compression: A logarithmic operation is applied to the output of the Mel filtering stage to compress the dynamic range of the features.
-
-6. Discrete Cosine Transform (DCT): Finally, a fixed-point INT16 DCT is performed to transform the logarithmic features into a compact representation suitable for further processing or analysis.
-Implementation Details
-
-Top-Level Module: The Verilog implementation includes a top-level module with INT16 input and output ports for audio samples and MFCC features, respectively. Control signals are provided to manage the processing stages.
-
-Sub-Modules: Each processing stage is instantiated as a sub-module within the top-level design. These modules are designed to efficiently handle the specified operations while maintaining low resource utilization.
-
-Optimizations: Various optimizations are applied at each stage, including the use of fixed-point arithmetic, lookup tables, and ROM storage for coefficients and intermediate results.
-
-
-
-[↟Back to Top](#ecko-a-keyword-spotting-accelerator-for-caravel-soc)
 
 ### Features
 - **Efficient Keyword Spotting**: Utilizes a compact, optimized CNN model for fast and accurate speech recognition.

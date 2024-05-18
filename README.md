@@ -40,11 +40,11 @@ Visualization-of-Thought for spatial reasoning is crucial when prompting LLMs as
 
 
 ### Prompting Patterns
-To refine the process of interacting with LLMs, we employed two specific prompting patterns [paper:https://doi.org/10.48550/arXiv.2302.11382](https://doi.org/10.48550/arXiv.2302.11382): "Recipe" and "Persona."
+To refine the process of interacting with LLMs, we employed two specific prompting patterns [(paper: https://doi.org/10.48550/arXiv.2302.11382)](https://doi.org/10.48550/arXiv.2302.11382): e
 
-**Recipe**: In order to gather the necessary steps to create a hardware trojan using an LLM, we enhanced our prompt engineering techniques by using the Recipe prompt pattern:
+**Recipe**: The recipe prompt pattern works by providing a structured, step-by-step framework for generating responses, akin to following a recipe. Each step includes specific instructions or questions, guiding the AI through a logical progression. This method ensures thoroughness and consistency, improving the clarity and quality of the generated content.
 
-The main intent of this process is to gather a sequence of steps with an intent to create the trojan (for example, “I would like to add ‘X’ feature to my codebase. I need to perform steps A, B, C. Provide a sequence for me and fill in any missing steps.”). Using this pattern, the LLM will analyze a concrete sequence of steps for creating with purpose the trojan (for example, “Identify any unnecessary steps”).
+![Recipe](/images/recipe.png)
 
 **Persona**: We then used the Persona prompt pattern to:
 
@@ -54,7 +54,7 @@ The main intent of this process is to gather a sequence of steps with an intent 
 - Provide example code for the LLM to follow along using the Chain of Thought prompt engineering technique (for example, “This part of code ‘X’ from my codebase needs new features.”).
 
 
-This approach enabled the AI to provide detailed, step-by-step explanations and maintain coherence throughout complex tasks.
+These approaches enabled the LLMs to provide detailed, step-by-step explanations and maintain coherence throughout complex tasks.
 
 [↟Back to Top](#ecko-a-keyword-spotting-accelerator-for-caravel-soc)
 

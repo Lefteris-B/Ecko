@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="./images/ecko.png" />
+</p>
+
 # Ecko: A Keyword Spotting Accelerator for Caravel SoC
 
 Ecko *(greek ἠχώ)* is an open-source hardware accelerator designed specifically for efficient and accurate Keyword Spotting (KWS) on edge devices. Leveraging the power of the "Hello Edge" CNN model and optimized for the caravel platform.
@@ -6,6 +10,7 @@ Ecko seamlessly integrates with the Caravel System-on-Chip to provide real-time 
 
 ## Table of Contents
 - [Introduction](#introduction)
+  - [Features](#features)
 - [Prompt Methodology](#prompt-methodology)
   - [Prompt Engineering](#prompt-engineering)
   - [Prompting Patterns](#prompting-patterns)
@@ -21,14 +26,17 @@ Ecko seamlessly integrates with the Caravel System-on-Chip to provide real-time 
 - [Mel-frequency Cepstral Coefficients (MFCC) Implementation](#mel-frequency-cepstral-coefficients-mfcc-implementation)
   - [MFCC Implementation Computational Optimizations](#mfcc-implementation-computational-optimizations)
   - [MFCC Pipeline](#mfcc-pipeline)
-- [KWS Dataflow](#kws-dataflow)
-- [KWS RAM Address Map](#kws-ram-address-map)
-- [CNN-KWS Model Architecture](#cnn-kws-model-architecture)
-- [Advantages](#advantages)
+- [Keyword Spotting (KWS)](#keyword-spotting-kws)
+  - [KWS Dataflow](#kws-dataflow)
+  - [KWS RAM Address Map](#kws-ram-address-map)
+  - [CNN-KWS Model Architecture](#cnn-kws-model-architecture)
+  - [CNN-KWS Layers](#cnn-kws-layers)
+  - [Computational Optimizations](#computational-optimizations)
 - [Testing](#testing)
 - [Verification](#verification)
 - [License](#license)
 - [Efabless Repository and Files](#efabless-repository-and-files)
+
 
 
 
@@ -346,9 +354,9 @@ Optimizations: Various optimizations are applied at each stage, including the us
 [↟Back to Top](#ecko-a-keyword-spotting-accelerator-for-caravel-soc)
 
 
-## Keyword Spoting 
+## Keyword Spoting (KWS)
 
-
+Keyword spotting (KWS) is a specialized task in speech recognition that focuses on detecting specific keywords or phrases within an audio stream. Unlike full speech recognition systems that transcribe entire utterances, keyword spotting systems are designed to recognize predefined words or commands, making them ideal for applications such as voice-activated assistants, command-and-control interfaces, and wake-word detection (e.g., "Hey Siri" or "OK Google").
 
 ### KWS Dataflow 
 
@@ -543,17 +551,53 @@ maxpool_data_out
     v
 softmax_data_out
 ```
+### CNN-KWS Layers 
 
+Layer Details:
+Input Layer MFCC
+Signal Width: 40 bits
+Convolution Layer 1
 
-### Advantages
+Dimensions: 128x128x16
+Kernel Size: 3x3
+Stride: 1
+Signal Width: 16 bits
+Pooling Layer 1
 
-1. Compact architecture: The model consists of a few convolutional layers followed by fully connected layers, making it relatively lightweight and suitable for resource-constrained hardware.
+Dimensions: 64x64x16
+Pool Size: 2x2
+Stride: 2
+Signal Width: 16 bits
+Convolution Layer 2
 
-2. High accuracy: Despite its compact size, the CNN-KWS model achieves high accuracy in keyword spotting tasks, with reported accuracies of over 90% on popular KWS datasets like the Google Speech Commands dataset.
+Dimensions: 32x32x32
+Kernel Size: 3x3
+Stride: 1
+Signal Width: 32 bits
+Pooling Layer 2
 
-3. Compatibility with hardware: The convolutional and fully connected layers in the CNN-KWS model can be efficiently mapped to hardware resources like multiply-accumulate (MAC) units and memory buffers, enabling parallel and pipelined execution.
+Dimensions: 16x16x32
+Pool Size: 2x2
+Stride: 2
+Signal Width: 32 bits
+Fully Connected Layer
 
-4. Energy efficiency: The compact size and hardware-friendly architecture of the CNN-KWS model make it energy-efficient, which is crucial for battery-powered devices and edge computing scenarios.
+Dimensions: 128
+Signal Width: 32 bits
+Output Layer
+
+Dimensions: 10
+Signal Width: 32 bits
+
+### Computational Optimizations 
+
+The cnn_kws_accel module employs several computational optimizations to enhance performance and efficiency in keyword spotting applications:
+1.It utilizes parameterizable layers, allowing for tailored configurations that balance accuracy and resource usage according to specific application requirements. Convolution operations are optimized by leveraging parallel processing techniques, which significantly reduce the computational latency. 
+2. The module also implements efficient memory management strategies, such as input and output buffering, to minimize data transfer overhead. By applying fixed-point arithmetic rather than floating-point, the design achieves lower power consumption and faster execution, which is critical for real-time processing in embedded systems. 
+3. The use of smaller kernel sizes and stride adjustments in convolution and pooling layers reduces the amount of data processed, further enhancing the speed and efficiency of the model. 
+
+These optimizations collectively enable the cnn_kws_accel to perform rapid and accurate keyword detection while maintaining a low power footprint, making it suitable for deployment in resource-constrained environments like mobile and IoT devices.
+
 
 [↟Back to Top](#ecko-a-keyword-spotting-accelerator-for-caravel-soc)
 

@@ -5,11 +5,10 @@ module conv2d_psram #(
     parameter KERNEL_SIZE = 3,
     parameter NUM_FILTERS = 8,
     parameter PADDING = 1,
-    parameter ACTIV_BITS = 16,
-    parameter ADDR_WIDTH = 24
+    parameter ACTIV_BITS = 16
 ) (
     input wire clk,
-    input wire rst,
+    input wire rst_n,
     input wire [INPUT_WIDTH * INPUT_HEIGHT * INPUT_CHANNELS * ACTIV_BITS-1:0] data_in,
     input wire data_valid,
     output wire [INPUT_WIDTH * INPUT_HEIGHT * NUM_FILTERS * ACTIV_BITS-1:0] data_out,
@@ -23,10 +22,8 @@ module conv2d_psram #(
     output wire [3:0] psram_douten,
     
     // Base addresses for weights and biases
-    input wire [ADDR_WIDTH-1:0] weight_base_addr,
-    input wire [ADDR_WIDTH-1:0] bias_base_addr,
-    input wire [ADDR_WIDTH-1:0] input_base_addr,
-    input wire [ADDR_WIDTH-1:0] output_base_addr
+    input wire [23:0] weight_base_addr,
+    input wire [23:0] bias_base_addr
 );
 
     // State definitions
@@ -37,8 +34,8 @@ module conv2d_psram #(
                STORE_RESULT = 4,
                DONE = 5;
 
-    reg [2:0] state, next_state;
-    reg [ADDR_WIDTH-1:0] addr;
+    reg [3:0] state, next_state;
+    reg [23:0] addr;
     reg [31:0] psram_data;
     reg psram_start, psram_rd_wr;
     reg [2:0] psram_size;
@@ -50,7 +47,7 @@ module conv2d_psram #(
     // Instantiate PSRAM controller
     EF_PSRAM_CTRL_V2 psram_ctrl (
         .clk(clk),
-        .rst(rst),
+        .rst_n(rst_n),
         .addr(addr),
         .data_i(psram_data),
         .data_o(psram_data_out),
@@ -75,12 +72,10 @@ module conv2d_psram #(
     reg [ACTIV_BITS-1:0] conv_result [0:INPUT_HEIGHT-1][0:INPUT_WIDTH-1][0:NUM_FILTERS-1];
 
     integer i, j, k, l, m, n, p, q;
-    reg [15:0] weight_counter;
-    reg [15:0] bias_counter;
 
     // State machine
-    always @(posedge clk) begin
-        if (rst)
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n)
             state <= IDLE;
         else
             state <= next_state;
@@ -90,8 +85,8 @@ module conv2d_psram #(
         next_state = state;
         case (state)
             IDLE: if (data_valid) next_state = LOAD_WEIGHTS;
-            LOAD_WEIGHTS: if (weight_counter == (KERNEL_SIZE * KERNEL_SIZE * INPUT_CHANNELS * NUM_FILTERS)) next_state = LOAD_BIASES;
-            LOAD_BIASES: if (bias_counter == NUM_FILTERS) next_state = CONV;
+            LOAD_WEIGHTS: if (psram_done) next_state = LOAD_BIASES;
+            LOAD_BIASES: if (psram_done) next_state = CONV;
             CONV: next_state = STORE_RESULT;
             STORE_RESULT: if (psram_done) next_state = DONE;
             DONE: next_state = IDLE;
@@ -99,63 +94,42 @@ module conv2d_psram #(
     end
 
     // Control logic for PSRAM operations
-    always @(posedge clk) begin
-        if (rst) begin
-            addr <= 0;
-            psram_data <= 0;
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            addr <= 24'b0;
+            psram_data <= 32'b0;
             psram_start <= 0;
             psram_rd_wr <= 0;
             psram_size <= 3'b010; // 4 bytes
             psram_qspi <= 0;
             psram_qpi <= 0;
             psram_short_cmd <= 0;
-            weight_counter <= 0;
-            bias_counter <= 0;
         end else begin
             psram_start <= 0;
             case (state)
                 LOAD_WEIGHTS: begin
-                    if (!psram_start) begin
-                        addr <= weight_base_addr + weight_counter * 2; // Each weight is 2 bytes
-                        psram_rd_wr <= 1; // Read operation
-                        psram_start <= 1;
-                    end else if (psram_done) begin
-                        // Unpack data and store in weights register
-                        weights[weight_counter / (KERNEL_SIZE * KERNEL_SIZE * INPUT_CHANNELS)]
-                               [(weight_counter % (KERNEL_SIZE * KERNEL_SIZE * INPUT_CHANNELS)) / (KERNEL_SIZE * KERNEL_SIZE)]
-                               [(weight_counter % (KERNEL_SIZE * KERNEL_SIZE)) / KERNEL_SIZE]
-                               [(weight_counter % KERNEL_SIZE)] <= psram_data_out[ACTIV_BITS-1:0];
-                        weight_counter <= weight_counter + 1;
-                    end
+                    addr <= weight_base_addr;
+                    psram_rd_wr <= 1;
+                    psram_start <= 1;
                 end
-
                 LOAD_BIASES: begin
-                    if (!psram_start) begin
-                        addr <= bias_base_addr + bias_counter * 2; // Each bias is 2 bytes
-                        psram_rd_wr <= 1; // Read operation
-                        psram_start <= 1;
-                    end else if (psram_done) begin
-                        // Store data in biases register
-                        biases[bias_counter] <= psram_data_out[ACTIV_BITS-1:0];
-                        bias_counter <= bias_counter + 1;
-                    end
+                    addr <= bias_base_addr;
+                    psram_rd_wr <= 1;
+                    psram_start <= 1;
                 end
-
                 STORE_RESULT: begin
-                    if (!psram_start) begin
-                        addr <= output_base_addr + ((m * INPUT_WIDTH + n) * NUM_FILTERS + p) * 2; // Address to store results in PSRAM
-                        psram_data <= {16'b0, conv_result[m][n][p]}; // Write result
-                        psram_rd_wr <= 0; // Write operation
-                        psram_start <= 1;
-                    end
+                    addr <= 24'hXXXXXX; // Address to store results in PSRAM
+                    psram_data <= conv_result[m][n][p];
+                    psram_rd_wr <= 0;
+                    psram_start <= 1;
                 end
             endcase
         end
     end
 
     // Convolution operation
-    always @(posedge clk) begin
-        if (rst) begin
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
             for (i = 0; i < INPUT_HEIGHT; i = i + 1)
                 for (j = 0; j < INPUT_WIDTH; j = j + 1)
                     for (k = 0; k < NUM_FILTERS; k = k + 1)
@@ -182,9 +156,9 @@ module conv2d_psram #(
         end
     end
 
-    // Output result
     assign data_out = {conv_result[0][0][0], conv_result[0][0][1], conv_result[0][0][2], conv_result[0][0][3], conv_result[0][0][4], conv_result[0][0][5], conv_result[0][0][6], conv_result[0][0][7]};
     assign data_out_valid = (state == DONE);
     assign done = (state == DONE); // Drive the done signal when state is DONE
 
 endmodule
+

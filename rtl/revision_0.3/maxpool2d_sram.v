@@ -8,7 +8,7 @@ module maxpool_psram #(
     parameter ADDR_WIDTH = 24
 ) (
     input wire clk,
-    input wire rst,
+    input wire rst_n,
     input wire start,
     input wire [ADDR_WIDTH-1:0] input_addr,
     input wire [ADDR_WIDTH-1:0] output_addr,
@@ -39,7 +39,7 @@ module maxpool_psram #(
     // Instantiate PSRAM controller
     EF_PSRAM_CTRL_V2 psram_ctrl (
         .clk(clk),
-        .rst(rst),
+        .rst_n(rst_n),
         .addr(addr),
         .data_i(psram_data_i),
         .data_o(psram_data_o),
@@ -64,12 +64,12 @@ module maxpool_psram #(
     reg [ACTIV_BITS-1:0] max_value [0:INPUT_CHANNELS-1];
     reg [(INPUT_WIDTH/STRIDE) * INPUT_CHANNELS * ACTIV_BITS-1:0] data_out;
     reg data_out_valid;
-
-    integer i, j, k, m, n, input_load_count, output_store_count;
+    
+    integer i, j, k, m, n;
 
     // State machine
-    always @(posedge clk) begin
-        if (rst)
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n)
             state <= IDLE;
         else
             state <= next_state;
@@ -79,17 +79,17 @@ module maxpool_psram #(
         next_state = state;
         case (state)
             IDLE: if (start) next_state = LOAD_INPUT;
-            LOAD_INPUT: if (input_load_count == (INPUT_WIDTH * INPUT_HEIGHT * INPUT_CHANNELS)) next_state = MAXPOOL;
+            LOAD_INPUT: if (psram_done) next_state = MAXPOOL;
             MAXPOOL: next_state = STORE_OUTPUT;
-            STORE_OUTPUT: if (output_store_count == ((INPUT_WIDTH/STRIDE) * (INPUT_HEIGHT/STRIDE) * INPUT_CHANNELS)) next_state = DONE;
+            STORE_OUTPUT: if (psram_done) next_state = DONE;
             DONE: next_state = IDLE;
             default: next_state = IDLE;
         endcase
     end
 
     // Control logic for PSRAM operations
-    always @(posedge clk) begin
-        if (rst) begin
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
             addr <= 0;
             psram_data_i <= 0;
             psram_start <= 0;
@@ -98,42 +98,27 @@ module maxpool_psram #(
             psram_qspi <= 0;
             psram_qpi <= 0;
             psram_short_cmd <= 0;
-            input_load_count <= 0;
-            output_store_count <= 0;
         end else begin
             psram_start <= 0;
             case (state)
                 LOAD_INPUT: begin
-                    if (!psram_start) begin
-                        addr <= input_addr + input_load_count * 2; // Each data is 2 bytes
-                        psram_rd_wr <= 1; // Read operation
-                        psram_start <= 1;
-                    end else if (psram_done) begin
-                        // Store data in input_buffer
-                        input_buffer[input_load_count / (INPUT_WIDTH * INPUT_CHANNELS)]
-                                    [(input_load_count % (INPUT_WIDTH * INPUT_CHANNELS)) / INPUT_CHANNELS]
-                                    [input_load_count % INPUT_CHANNELS] <= psram_data_o[ACTIV_BITS-1:0];
-                        input_load_count <= input_load_count + 1;
-                    end
+                    addr <= input_addr;
+                    psram_rd_wr <= 1;
+                    psram_start <= 1;
                 end
-
                 STORE_OUTPUT: begin
-                    if (!psram_start) begin
-                        addr <= output_addr + output_store_count * 2; // Address to store results in PSRAM
-                        psram_data_i <= {16'b0, data_out[output_store_count * ACTIV_BITS +: ACTIV_BITS]}; // Write result
-                        psram_rd_wr <= 0; // Write operation
-                        psram_start <= 1;
-                    end else if (psram_done) begin
-                        output_store_count <= output_store_count + 1;
-                    end
+                    addr <= output_addr;
+                    psram_data_i <= {max_value[3], max_value[2], max_value[1], max_value[0]}; // Adjust if needed
+                    psram_rd_wr <= 0;
+                    psram_start <= 1;
                 end
             endcase
         end
     end
 
     // Max pooling operation
-    always @(posedge clk) begin
-        if (rst) begin
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
             data_out <= 0;
             data_out_valid <= 0;
             for (i = 0; i < INPUT_HEIGHT; i = i + 1) begin
@@ -177,3 +162,4 @@ module maxpool_psram #(
 
     assign done = (state == DONE);
 endmodule
+

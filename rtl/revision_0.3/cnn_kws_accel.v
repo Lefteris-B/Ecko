@@ -1,13 +1,13 @@
 `default_nettype none
 
 module cnn_kws_accel (
-    `ifdef USE_POWER_PINS
-        inout vccd1,    // User area 1 1.8V power
-        inout vssd1,    // User area 1 digital ground
-    `endif
+`ifdef USE_POWER_PINS
+    inout vccd1,    // User area 1 1.8V power
+    inout vssd1,    // User area 1 digital ground
+`endif
 
     input wire clk,
-    input wire rst,
+    input wire rst_n,
     input wire start,
     input wire [15:0] audio_sample, // Audio sample input
     input wire sample_valid, // New input to indicate the sample is accepted
@@ -16,11 +16,7 @@ module cnn_kws_accel (
     output wire psram_sck,
     output wire psram_ce_n,
     inout wire [3:0] psram_d,
-    output wire [3:0] psram_douten,
-
-    // Unused I/O signals
-    output wire [37:0] io_out,
-    output wire [37:0] io_oeb
+    output wire [3:0] psram_douten
 );
 
     // Internal signals for PSRAM
@@ -47,8 +43,8 @@ module cnn_kws_accel (
     state_t state, next_state;
 
     // State machine
-    always @(posedge clk) begin
-        if (rst)
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n)
             state <= IDLE;
         else
             state <= next_state;
@@ -106,17 +102,17 @@ module cnn_kws_accel (
     wire mfcc_valid;
 
     wire [23:0] conv1_weight_base_addr = 24'h000000;
-    wire [23:0] conv1_bias_base_addr = 24'h000300;
-    wire [23:0] conv2_weight_base_addr = 24'h000600;
-    wire [23:0] conv2_bias_base_addr = 24'h000900;
-    wire [23:0] fc1_weight_base_addr = 24'h000C00;
-    wire [23:0] fc1_bias_base_addr = 24'h001400;
-    wire [23:0] fc2_weight_base_addr = 24'h001600;
-    wire [23:0] fc2_bias_base_addr = 24'h001800;
-    wire [23:0] maxpool_input_addr = 24'h001A00;
-    wire [23:0] maxpool_output_addr = 24'h002000;
-    wire [23:0] softmax_input_addr = 24'h002200;
-    wire [23:0] softmax_output_addr = 24'h002300;
+    wire [23:0] conv1_bias_base_addr = 24'h000100;
+    wire [23:0] conv2_weight_base_addr = 24'h000200;
+    wire [23:0] conv2_bias_base_addr = 24'h000300;
+    wire [23:0] fc1_weight_base_addr = 24'h000400;
+    wire [23:0] fc1_bias_base_addr = 24'h000500;
+    wire [23:0] fc2_weight_base_addr = 24'h000600;
+    wire [23:0] fc2_bias_base_addr = 24'h000700;
+    wire [23:0] maxpool_input_addr = 24'h000800;
+    wire [23:0] maxpool_output_addr = 24'h000900;
+    wire [23:0] softmax_input_addr = 24'h000A00;
+    wire [23:0] softmax_output_addr = 24'h000B00;
 
     wire conv1_done, conv2_done, fc1_done, fc2_done, maxpool_done, softmax_done;
     wire conv1_data_valid = (state == CONV1);
@@ -141,7 +137,7 @@ module cnn_kws_accel (
 
     mfcc_accel mfcc (
         .clk(clk),
-        .rst(rst),
+        .rst(rst_n),
         .audio_sample(audio_sample),
         .sample_valid(sample_valid), // Connect sample_valid to mfcc_accel
         .mfcc_feature(mfcc_feature),
@@ -158,7 +154,7 @@ module cnn_kws_accel (
         .ACTIV_BITS(16)
     ) conv1 (
         .clk(clk),
-        .rst(rst),
+        .rst_n(rst_n),
         .data_in(mfcc_feature), // MFCC feature as input
         .data_valid(conv1_data_valid),
         .data_out(conv1_data_out),
@@ -169,8 +165,6 @@ module cnn_kws_accel (
         .psram_douten(conv1_psram_douten),
         .weight_base_addr(conv1_weight_base_addr),
         .bias_base_addr(conv1_bias_base_addr),
-        .input_base_addr(24'h000000),
-        .output_base_addr(24'h000400),
         .done(conv1_done)
     );
 
@@ -184,7 +178,7 @@ module cnn_kws_accel (
         .ACTIV_BITS(16)
     ) conv2 (
         .clk(clk),
-        .rst(rst),
+        .rst_n(rst_n),
         .data_in(conv1_data_out), // conv1 output as input
         .data_valid(conv2_data_valid),
         .data_out(conv2_data_out),
@@ -195,8 +189,6 @@ module cnn_kws_accel (
         .psram_douten(conv2_psram_douten),
         .weight_base_addr(conv2_weight_base_addr),
         .bias_base_addr(conv2_bias_base_addr),
-        .input_base_addr(24'h000500),
-        .output_base_addr(24'h000900),
         .done(conv2_done)
     );
 
@@ -206,7 +198,7 @@ module cnn_kws_accel (
         .ACTIV_BITS(16)
     ) fc1 (
         .clk(clk),
-        .rst(rst),
+        .rst_n(rst_n),
         .data_in(conv2_data_out),
         .data_valid(conv2_data_out_valid),
         .data_out(fc1_data_out),
@@ -217,7 +209,6 @@ module cnn_kws_accel (
         .psram_douten(fc1_psram_douten),
         .weight_base_addr(fc1_weight_base_addr),
         .bias_base_addr(fc1_bias_base_addr),
-        .output_base_addr(24'h001000),
         .done(fc1_done)
     );
 
@@ -227,7 +218,7 @@ module cnn_kws_accel (
         .ACTIV_BITS(16)
     ) fc2 (
         .clk(clk),
-        .rst(rst),
+        .rst_n(rst_n),
         .data_in(fc1_data_out),
         .data_valid(fc1_data_out_valid),
         .data_out(fc2_data_out),
@@ -238,7 +229,6 @@ module cnn_kws_accel (
         .psram_douten(fc2_psram_douten),
         .weight_base_addr(fc2_weight_base_addr),
         .bias_base_addr(fc2_bias_base_addr),
-        .output_base_addr(24'h001600),
         .done(fc2_done)
     );
 
@@ -252,7 +242,7 @@ module cnn_kws_accel (
         .ADDR_WIDTH(24)
     ) maxpool (
         .clk(clk),
-        .rst(rst),
+        .rst_n(rst_n),
         .start(maxpool_data_valid),
         .input_addr(maxpool_input_addr),
         .output_addr(maxpool_output_addr),
@@ -269,10 +259,16 @@ module cnn_kws_accel (
         .ADDR_WIDTH(24)
     ) softmax (
         .clk(clk),
-        .rst(rst),
+        .rst_n(rst_n),
         .start(softmax_start),
         .input_addr(softmax_input_addr),
         .output_addr(softmax_output_addr),
+        .size(3'b010),
+        .cmd(8'hEB),
+        .rd_wr(1'b1),
+        .qspi(1'b0),
+        .qpi(1'b0),
+        .short_cmd(1'b0),
         .done(softmax_done),
         .psram_sck(softmax_psram_sck),
         .psram_ce_n(softmax_psram_ce_n),
@@ -282,10 +278,6 @@ module cnn_kws_accel (
 
     // Assign overall done signal
     assign done = (state == SOFTMAX) && softmax_done;
-
-    // Tie unused io_out signals low
-    assign io_out = 38'b0000_0000;
-    assign io_oeb = 38'b0000_0000;
 
 endmodule
 

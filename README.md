@@ -33,6 +33,194 @@ mfcc_accel-> conv2d_psram (conv1) -> conv2d_psram (conv2) -> fully_connected_psr
 
 The dataflow in the cnn_kws_accel module begins in the IDLE state, waiting for a start signal. Once triggered, it transitions to the MFCC (Mel Frequency Cepstral Coefficients) extraction stage, where audio features are computed. The data then flows to the first convolutional layer (conv2d_psram (conv1)) for initial feature extraction, followed by a second convolutional layer (conv2d_psram (conv2)) for further processing. The output is passed to the first fully connected layer (fully_connected_psram (fc1)) to integrate the features, then to a second fully connected layer (fully_connected_psram (fc2)) for deeper integration. Subsequently, the data is processed by the max pooling layer (maxpool2d_sram) to downsample the features and reduce dimensionality. Finally, the data reaches the softmax layer (softmax_psram), where probabilities are computed for classification. The completion of this stage indicates the end of the processing sequence.
 
+## KWS RAM address map
+
+In the our imlementation, pseudo-static RAM (PSRAM) plays a crucial role in managing the temporary storage and retrieval of intermediate data between various processing stages. During the execution of convolutional layers, fully connected layers, and other operations, large amounts of data are generated and need to be efficiently stored and accessed. PSRAM provides a high-density, cost-effective memory solution that balances the speed of SRAM with the density of DRAM, making it suitable for embedded applications like keyword spotting (KWS). By leveraging PSRAM, the accelerator can handle the memory demands of complex neural network computations without incurring the higher costs and power consumption associated with traditional memory solutions, thereby enabling real-time processing and improving overall system performance.
+
+Address Map Explanation: 
+
+1. Convolution Layer 1: 
+- conv1_weight_base_addr: 0x000000 
+- conv1_bias_base_addr: 0x000100 
+
+2. Convolution Layer 2: 
+- conv2_weight_base_addr: 0x000200 
+- conv2_bias_base_addr: 0x000300 
+
+3. Fully Connected Layer 1: 
+- fc1_weight_base_addr: 0x000400 
+- fc1_bias_base_addr: 0x000500 
+
+4. Fully Connected Layer 2: 
+- fc2_weight_base_addr: 0x000600 
+- fc2_bias_base_addr: 0x000700 
+
+5. Max Pooling Layer: 
+- maxpool_input_addr: 0x000800 
+- maxpool_output_addr: 0x000900 
+
+6. Softmax Layer: 
+- softmax_input_addr: 0x000A00 
+- softmax_output_addr: 0x000B00 
+
+This address map helps visualize how the different weights, biases, and data for each layer are 
+organized in memory. Each module's base address is separated by 0x100 to ensure no overlap and 
+allow easy access to the data stored for each layer. 
+
+
+**Topdown visualization using SysML BDD Diagram**
+```
+audio_sample 
+    |
+    v
+mfcc_accel
+    |
+    v
+mfcc_feature
+    |
+    v
++--------------+                                +--------------------------+
+| conv2d_psram | <------------------------------| conv1_weight_base_addr   |
+|    (conv1)   |                                | 24'h000000               |
+|              | <------------------------------| conv1_bias_base_addr     |
+|              |                                | 24'h000300               |
+|              |                                +--------------------------+
+| Params:      |
+| INPUT_WIDTH  |                                  Calculation:
+| 40           |                                  conv1_data_out = conv2d(mfcc_feature, weights, biases)
+| INPUT_HEIGHT | 
+| 1            |
+| INPUT_CHANNELS|
+| 1            |
+| KERNEL_SIZE  |
+| 3            |
+| NUM_FILTERS  |
+| 8            |
+| PADDING      |
+| 1            |
+| ACTIV_BITS   |
+| 16           |
++--------------+
+    |
+    v
+conv1_data_out
+    |
+    v
++--------------+                                +--------------------------+
+| conv2d_psram | <------------------------------| conv2_weight_base_addr   |
+|    (conv2)   |                                | 24'h000600               |
+|              | <------------------------------| conv2_bias_base_addr     |
+|              |                                | 24'h000900               |
+|              |                                +--------------------------+
+| Params:      |
+| INPUT_WIDTH  |                                  Calculation:
+| 40           |                                  conv2_data_out = conv2d(conv1_data_out, weights, biases)
+| INPUT_HEIGHT |
+| 1            |
+| INPUT_CHANNELS|
+| 8            |
+| KERNEL_SIZE  |
+| 3            |
+| NUM_FILTERS  |
+| 16           |
+| PADDING      |
+| 1            |
+| ACTIV_BITS   |
+| 16           |
++--------------+
+    |
+    v
+conv2_data_out
+    |
+    v
++----------------------+                       +--------------------------+
+| fully_connected_psram| <---------------------| fc1_weight_base_addr     |
+|        (fc1)         |                       | 24'h000C00               |
+|                      | <---------------------| fc1_bias_base_addr       |
+|                      |                       | 24'h001400               |
+|                      |                       +--------------------------+
+| Params:              |
+| INPUT_SIZE           |                         Calculation:
+| 640                  |                         fc1_data_out = fully_connected(conv2_data_out, weights, biases)
+| OUTPUT_SIZE          |
+| 64                   |
+| ACTIV_BITS           |
+| 16                   |
++----------------------+
+    |
+    v
+fc1_data_out
+    |
+    v
++----------------------+                       +--------------------------+
+| fully_connected_psram| <---------------------| fc2_weight_base_addr     |
+|        (fc2)         |                       | 24'h001600               |
+|                      | <---------------------| fc2_bias_base_addr       |
+|                      |                       | 24'h001800               |
+|                      |                       +--------------------------+
+| Params:              |
+| INPUT_SIZE           |                         Calculation:
+| 64                   |                         fc2_data_out = fully_connected(fc1_data_out, weights, biases)
+| OUTPUT_SIZE          |
+| 32                   |
+| ACTIV_BITS           |
+| 16                   |
++----------------------+
+    |
+    v
+fc2_data_out
+    |
+    v
++----------------------+                       
+| maxpool2d_sram       |
+|                      |
+| Params:              |
+| INPUT_WIDTH          |                         Calculation:
+| 40                   |                         maxpool_data_out = maxpool(fc2_data_out)
+| INPUT_HEIGHT         |
+| 1                    |
+| INPUT_CHANNELS       |
+| 16                   |
+| KERNEL_SIZE          |
+| 2                    |
+| STRIDE               |
+| 2                    |
+| ACTIV_BITS           |
+| 16                   |
+| ADDR_WIDTH           |
+| 24                   |
++----------------------+
+    |
+    v
+maxpool_data_out
+    |
+    v
++----------------------+                       
+| softmax_psram        |
+|                      |
+| Params:              |                         Calculation:
+| INPUT_SIZE           |                         softmax_data_out = softmax(maxpool_data_out)
+| 10                   |
+| ACTIV_BITS           |
+| 8                    |
+| ADDR_WIDTH           |
+| 24                   |
++----------------------+
+    |
+    v
+softmax_data_out
+```
+
+
+
+
+## The MFCC
+```
+audio_sample -> mfcc_accel -> mfcc_feature
+```
+
+The MFCC (Mel Frequency Cepstral Coefficients) dataflow in the cnn_kws_accel module starts with the audio_sample input, which is fed into the mfcc_accel module. The mfcc_accel module processes the raw audio signal to extract MFCC features, which are a compact representation of the power spectrum of the audio signal. This is achieved by applying a series of transformations: pre-emphasis, framing, windowing, fast Fourier transform (FFT), Mel filter bank processing, and discrete cosine transform (DCT). The resulting mfcc_feature output is a set of coefficients that capture the essential characteristics of the audio signal, making it suitable for further processing in the subsequent stages of the CNN-based keyword spotting accelerator.
+
 #### Advantages
 
 1. Compact architecture: The model consists of a few convolutional layers followed by fully connected layers, making it relatively lightweight and suitable for resource-constrained hardware.

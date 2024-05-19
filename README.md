@@ -139,7 +139,7 @@ The dimensions of the hardware and software components significantly influence t
 Pipelining is a crucial feature that enhances the execution of matrix multiplication operations, a common task in deep learning models. By effectively using pipelining, we can overlap the execution of multiple instructions, which helps to utilize the hardware more efficiently and increase the throughput. Specifically, we leveraged external memories by using a pseudo-ram interface that holds the same data across different pipeline stages to improve energy consumption. This approach reduces the need for repeated memory accesses for the same data, thus saving power,time and space. Pipelining is particularly effective in deep neural network computations where such data reusability is common. 
 
 ### Quantization
-We implemented integer-only quantization, reducing the precision of weights and activations to int8. This optimization significantly lowered memory usage and enhanced computational speed, fitting our low-power design requirements.
+We implemented integer-only quantization, reducing the precision of weights and activations. This optimization significantly lowered memory usage and enhanced computational speed, fitting our low-power design requirements.
 
 ### Pruning
 Our design involved pruning less significant weights and neurons from the neural network, resulting in a smaller and more efficient model. This optimization reduced the model size and sped up inference without compromising accuracy.

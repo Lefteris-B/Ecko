@@ -34,6 +34,7 @@ Ecko seamlessly integrates with the Caravel System-on-Chip to provide real-time 
   - [Computational Optimizations](#computational-optimizations)
 - [Testing](#testing)
 - [Verification](#verification)
+- [GDS Renders](#gds-renders)
 - [License](#license)
 - [Efabless Repository and Files](#efabless-repository-and-files)
 

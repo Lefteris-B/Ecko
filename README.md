@@ -611,6 +611,14 @@ Verification script is inside /formal_verification folder.
 
 [↟Back to Top](#ecko-a-keyword-spotting-accelerator-for-caravel-soc)
 
+## GDS Renders
+TOP LEFT Orthographic view:
+![top left  ](/images/TOPLEFT.png)
+TOP Orthographic view:
+![ top ](/images/TOP.png)
+Perspective view:
+![persp  ](/images/PERSP.png)
+
 
 ## License
 

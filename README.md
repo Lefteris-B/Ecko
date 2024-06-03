@@ -34,6 +34,7 @@ Ecko seamlessly integrates with the Caravel System-on-Chip to provide real-time 
   - [Computational Optimizations](#computational-optimizations)
 - [Testing](#testing)
 - [Verification](#verification)
+- [After Tapeout Tests][#after_tapeout_tests]
 - [GDS Renders](#gds-renders)
 - [License](#license)
 - [Efabless Repository and Files](#efabless-repository-and-files)
@@ -609,6 +610,77 @@ Each model was tested using SystemVerilog assertions. That involves writing test
 ## Verification
 Formal verification is a powerful technique that uses mathematical methods to prove the correctness of a design. We verified the KWS accelerator pipeline using the SymbiYosys (sby) front-end and the Yosys open synthesis suite.
 Verification script is inside /formal_verification folder.
+
+[↟Back to Top](#ecko-a-keyword-spotting-accelerator-for-caravel-soc)
+##After Tapeout tests
+
+After the tapeout of the ASIC, comprehensive testing is crucial to ensure its functionality and performance. This section outlines the steps and methods for testing the ASIC using external memory and FPGA (I own a Terasic DE10-Lite board). Bitbanging can be employed for any missing signals.
+
+### Testing Setup
+#### Test Environment Preparation
+
+Set up a dedicated test environment with the necessary power supplies, oscilloscopes, logic analyzers, and signal generators.
+Ensure that the Terasic DE10-Lite board is properly configured and connected to the ASIC.
+
+#### External Memory Interface
+
+Connect the ASIC to an external memory module (e.g., SRAM, DRAM) as specified in your design.
+Verify the memory interface connections for integrity and correct pin mapping.
+
+
+### FPGA Configuration for testing
+
+Program the Terasic DE10-Lite FPGA to mimic the required interfaces and protocols needed by the ASIC.
+Load the test bitstream onto the FPGA, which includes the necessary logic to communicate with the ASIC.
+Bitbanging for Missing Signals
+
+Use FPGA I/O pins for bitbanging any missing signals that are not directly supported by the FPGA hardware.
+Implement a simple state machine in the FPGA to generate the necessary control signals for the ASIC.
+### Signal Generation and Capture
+
+Use the FPGA to generate input test vectors and stimuli for the ASIC.
+Capture the output responses from the ASIC using the FPGA, and store the data in external memory or transmit it to a host computer for analysis.
+
+###Test Procedures
+#### Functional Testing
+
+Verify the basic functionality of the ASIC by running simple test cases that cover the primary operations.
+Check for correct data flow through the external memory interface, and ensure that read/write operations are performed accurately.
+### Performance Testing
+
+Measure the performance of the ASIC under different operating conditions and workloads.
+Ensure that the ASIC meets the specified timing and power requirements.
+### Stress Testing
+
+Subject the ASIC to stress conditions such as high temperature, voltage variations, and maximum load scenarios.
+Monitor the ASIC’s behavior and ensure it operates reliably under these conditions.
+### Validation against Reference Models
+
+Compare the ASIC’s output with a reference model or golden standard to ensure accuracy.
+Use simulation tools and the FPGA to validate the ASIC’s behavior against expected results.
+### Data Analysis
+#### Collecting Test Data
+
+Store the test data collected from the ASIC in external memory or transfer it to a host computer.
+Use appropriate data logging and analysis tools to interpret the results.
+#### Result Analysis
+
+Analyze the test data to identify any discrepancies or issues.
+Perform root cause analysis for any failures or unexpected behavior.
+### Documentation
+
+Document the test procedures, results, and any issues encountered during testing.
+Provide detailed reports on the ASIC’s performance, functionality, and reliability.
+### Continuous Improvement
+#### Feedback Loop
+
+Use the insights gained from testing to refine and improve the ASIC design.
+Implement design changes and optimizations based on the test results.
+#### Iterative Testing
+
+Perform iterative testing cycles to validate design changes and ensure continuous improvement.
+Maintain a thorough log of all tests conducted and their outcomes.
+By following these steps and utilizing the Terasic DE10-Lite FPGA along with external memory, you can thoroughly test and validate your ASIC post-tapeout, ensuring it meets the desired specifications and performance criteria.
 
 [↟Back to Top](#ecko-a-keyword-spotting-accelerator-for-caravel-soc)
 

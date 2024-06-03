@@ -612,6 +612,7 @@ Formal verification is a powerful technique that uses mathematical methods to pr
 Verification script is inside /formal_verification folder.
 
 [↟Back to Top](#ecko-a-keyword-spotting-accelerator-for-caravel-soc)
+
 ##After Tapeout tests
 
 After the tapeout of the ASIC, comprehensive testing is crucial to ensure its functionality and performance. This section outlines the steps and methods for testing the ASIC using external memory and FPGA (I own a Terasic DE10-Lite board). Bitbanging can be employed for any missing signals.

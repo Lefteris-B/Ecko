@@ -34,7 +34,7 @@ Ecko seamlessly integrates with the Caravel System-on-Chip to provide real-time 
   - [Computational Optimizations](#computational-optimizations)
 - [Testing](#testing)
 - [Verification](#verification)
-- [After Tapeout Tests](#after_tapeout_tests)
+- [After Tapeout Tests](#after-tapeout-tests)
 - [GDS Renders](#gds-renders)
 - [License](#license)
 - [Efabless Repository and Files](#efabless-repository-and-files)
@@ -613,11 +613,12 @@ Verification script is inside /formal_verification folder.
 
 [↟Back to Top](#ecko-a-keyword-spotting-accelerator-for-caravel-soc)
 
-##After Tapeout tests
+##After Tapeout Tests
 
 After the tapeout of the ASIC, comprehensive testing is crucial to ensure its functionality and performance. This section outlines the steps and methods for testing the ASIC using external memory and FPGA (I own a Terasic DE10-Lite board). Bitbanging can be employed for any missing signals.
 
 ### Testing Setup
+
 #### Test Environment Preparation
 
 Set up a dedicated test environment with the necessary power supplies, oscilloscopes, logic analyzers, and signal generators.
@@ -637,46 +638,58 @@ Bitbanging for Missing Signals
 
 Use FPGA I/O pins for bitbanging any missing signals that are not directly supported by the FPGA hardware.
 Implement a simple state machine in the FPGA to generate the necessary control signals for the ASIC.
+
 ### Signal Generation and Capture
 
 Use the FPGA to generate input test vectors and stimuli for the ASIC.
 Capture the output responses from the ASIC using the FPGA, and store the data in external memory or transmit it to a host computer for analysis.
 
 ###Test Procedures
+
 #### Functional Testing
 
 Verify the basic functionality of the ASIC by running simple test cases that cover the primary operations.
 Check for correct data flow through the external memory interface, and ensure that read/write operations are performed accurately.
+
 ### Performance Testing
 
 Measure the performance of the ASIC under different operating conditions and workloads.
 Ensure that the ASIC meets the specified timing and power requirements.
+
 ### Stress Testing
 
 Subject the ASIC to stress conditions such as high temperature, voltage variations, and maximum load scenarios.
 Monitor the ASIC’s behavior and ensure it operates reliably under these conditions.
+
 ### Validation against Reference Models
 
 Compare the ASIC’s output with a reference model or golden standard to ensure accuracy.
 Use simulation tools and the FPGA to validate the ASIC’s behavior against expected results.
+
 ### Data Analysis
+
 #### Collecting Test Data
 
 Store the test data collected from the ASIC in external memory or transfer it to a host computer.
 Use appropriate data logging and analysis tools to interpret the results.
+
 #### Result Analysis
 
 Analyze the test data to identify any discrepancies or issues.
 Perform root cause analysis for any failures or unexpected behavior.
+
 ### Documentation
 
 Document the test procedures, results, and any issues encountered during testing.
 Provide detailed reports on the ASIC’s performance, functionality, and reliability.
+
 ### Continuous Improvement
+
 #### Feedback Loop
 
 Use the insights gained from testing to refine and improve the ASIC design.
 Implement design changes and optimizations based on the test results.
+
 #### Iterative Testing
 
 Perform iterative testing cycles to validate design changes and ensure continuous improvement.

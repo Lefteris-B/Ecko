@@ -615,7 +615,9 @@ Verification script is inside /formal_verification folder.
 
 ## After Tapeout Tests
 
-After the tapeout of the ASIC, comprehensive testing is crucial to ensure its functionality and performance. This section outlines the steps and methods for testing the ASIC using external memory and FPGA (I own a Terasic DE10-Lite board). Bitbanging can be employed for any missing signals.
+After the tapeout of the ASIC, comprehensive testing is crucial to ensure its functionality and performance. 
+This section outlines the steps and methods for testing the ASIC using external memory and FPGA (I own a Terasic DE10-Lite board). 
+Bitbanging can be employed for any missing signals.
 
 ### Testing Setup
 
@@ -626,7 +628,7 @@ Ensure that the Terasic DE10-Lite board is properly configured and connected to 
 
 #### External Memory Interface
 
-Connect the ASIC to an external memory module (e.g., SRAM, DRAM) as specified in your design.
+Connect the ASIC to an external memory module (e.g., SRAM, DRAM) as specified in the design.
 Verify the memory interface connections for integrity and correct pin mapping.
 
 
@@ -634,9 +636,8 @@ Verify the memory interface connections for integrity and correct pin mapping.
 
 Program the Terasic DE10-Lite FPGA to mimic the required interfaces and protocols needed by the ASIC.
 Load the test bitstream onto the FPGA, which includes the necessary logic to communicate with the ASIC.
-Bitbanging for Missing Signals
 
-Use FPGA I/O pins for bitbanging any missing signals that are not directly supported by the FPGA hardware.
+Bitbanging is also a viable option for Missing Signals by using the FPGA I/O pins for bitbanging any missing signals that are not directly supported by the FPGA hardware.
 Implement a simple state machine in the FPGA to generate the necessary control signals for the ASIC.
 
 ### Signal Generation and Capture
@@ -694,7 +695,9 @@ Implement design changes and optimizations based on the test results.
 
 Perform iterative testing cycles to validate design changes and ensure continuous improvement.
 Maintain a thorough log of all tests conducted and their outcomes.
-By following these steps and utilizing the Terasic DE10-Lite FPGA along with external memory, you can thoroughly test and validate your ASIC post-tapeout, ensuring it meets the desired specifications and performance criteria.
+By following these steps and utilizing the Terasic DE10-Lite FPGA along with external memory, 
+we can thoroughly test and validate the ASIC post-tapeout, 
+ensuring it meets the desired specifications and performance criteria.
 
 [↟Back to Top](#ecko-a-keyword-spotting-accelerator-for-caravel-soc)
 
